@@ -1,0 +1,341 @@
+<meta charset="utf-8">
+<title>Painel do gestor — conceito</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0c11; --fc: #c8203a; --fc-br: #e0324a;
+    --txt: #e8eaf1; --dim: #8b93a7; --mute: #565e72;
+    --yellow: #e0b83a; --orange: #e07d2f; --red: #e5484d; --lblue: #5fb0e8; --green: #6db36b;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  body { font-family: var(--font); background: var(--bg); color: var(--txt);
+    -webkit-font-smoothing: antialiased; padding: 22px; }
+  .stage { position: relative; border-radius: 20px; overflow: hidden;
+    background:
+      radial-gradient(ellipse 95% 60% at 50% -5%, rgba(200,32,58,.06), transparent 60%),
+      linear-gradient(rgba(255,255,255,.013) 1px, transparent 1px) 0 0 / 60px 60px,
+      linear-gradient(90deg, rgba(255,255,255,.013) 1px, transparent 1px) 0 0 / 60px 60px,
+      #0a0c11;
+    padding: 16px; }
+  .stage::after { content:''; position:absolute; inset:0; pointer-events:none;
+    background: radial-gradient(ellipse 90% 75% at 50% 40%, transparent 55%, rgba(0,0,0,.55)); }
+
+  .win { position: relative; z-index: 1; border: 1px solid rgba(255,255,255,.08);
+    border-radius: 16px; background: rgba(255,255,255,.022); box-shadow: 0 30px 60px -24px rgba(0,0,0,.7); }
+  .chrome { position: relative; display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 18px; border-bottom: 1px solid rgba(255,255,255,.06); }
+  .chrome::before { content:''; position:absolute; left:0; right:0; top:0; height:2px; border-radius:16px 16px 0 0;
+    background: linear-gradient(90deg, var(--fc), var(--fc-br) 16%, transparent 60%); }
+  .brand { display: flex; align-items: center; gap: 11px; }
+  .logo { width: 34px; height: 34px; border-radius: 50%; background: var(--fc);
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 12px rgba(200,32,58,.4); }
+  .logo b { color:#fff; font-weight: 800; font-size: .95rem; letter-spacing: -.5px; }
+  .logo b small { font-size: .72rem; }
+  .brand .wm { font-size: .82rem; font-weight: 600; }
+  .brand .wm span { display:block; font-size: .64rem; color: var(--mute); font-weight:500; }
+
+  .winbtns { display: flex; align-items: center; gap: 17px; }
+  .winbtns .ic { width: 19px; height: 19px; stroke: var(--dim); stroke-width: 2; fill: none; cursor: pointer; transition: stroke .15s; }
+  .winbtns .ic:hover { stroke: var(--txt); }
+  .winbtns .close:hover { stroke: var(--fc-br); }
+  .bell-wrap { position: relative; display: flex; }
+  .bell { position: relative; cursor: pointer; display: flex; }
+  .bell .badge { position: absolute; top: -7px; right: -8px; background: var(--fc); color: #fff;
+    font-size: .56rem; font-weight: 800; min-width: 16px; height: 16px; border-radius: 99px;
+    display: flex; align-items: center; justify-content: center; padding: 0 4px; border: 2px solid #0e1118; }
+  .drop { position: absolute; top: 33px; right: 0; width: 304px; background: #12151d;
+    border: 1px solid rgba(255,255,255,.1); border-radius: 13px; overflow: hidden;
+    box-shadow: 0 24px 54px -18px rgba(0,0,0,.85); display: none; z-index: 50; }
+  .drop.open { display: block; }
+  .drop-h { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px;
+    border-bottom: 1px solid rgba(255,255,255,.07); font-size: .8rem; font-weight: 700; }
+  .drop-h a { color: var(--fc-br); font-size: .68rem; cursor: pointer; }
+  .ntf { display: flex; gap: 11px; padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,.05); }
+  .ntf:last-child { border-bottom: none; }
+  .ntf.unread { background: rgba(200,32,58,.07); }
+  .ntf .nd { width: 7px; height: 7px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; background: var(--fc); }
+  .ntf.read .nd { background: var(--mute); }
+  .ntf .nt { font-size: .76rem; line-height: 1.4; }
+  .ntf .ntime { font-size: .62rem; color: var(--mute); margin-top: 4px; }
+
+  .tabs { display: flex; gap: 4px; padding: 0 12px; border-bottom: 1px solid rgba(255,255,255,.06); flex-wrap: wrap; }
+  .tab { background: none; border: none; color: var(--dim); font-family: inherit; font-size: .86rem;
+    font-weight: 600; padding: 13px 15px; cursor: pointer; position: relative; display: flex; align-items: center; gap: 7px; }
+  .tab:hover:not(.active) { color: var(--txt); }
+  .tab.active { color: #fff; }
+  .tab.active::after { content:''; position: absolute; left: 15px; right: 15px; bottom: -1px; height: 2px; background: var(--fc); border-radius: 2px; }
+  .tab .pill { background: var(--fc); color: #fff; font-size: .58rem; font-weight: 800; padding: 1px 7px; border-radius: 99px; }
+
+  .panel { padding: 24px; }
+  .hello h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -.6px; }
+  .hello .sentence { font-size: .98rem; color: var(--dim); margin-top: 8px; line-height: 1.6; }
+  .hello .sentence b { font-weight: 700; }
+  .n-yellow { color: var(--yellow); } .n-orange { color: var(--orange); }
+  .n-red { color: var(--red); } .n-lblue { color: var(--lblue); } .n-fc { color: var(--fc-br); }
+
+  .cmd { display: flex; align-items: center; gap: 18px; margin-top: 20px; padding: 18px 22px; border-radius: 16px;
+    border: 1px solid rgba(200,32,58,.35); background: linear-gradient(120deg, rgba(200,32,58,.18), rgba(200,32,58,.03)); }
+  .cmd .big { font-size: 2.6rem; font-weight: 800; color: var(--fc-br); letter-spacing: -1.5px; line-height: 1; }
+  .cmd .ctxt { flex: 1; }
+  .cmd .ctxt .t { font-size: .98rem; font-weight: 700; }
+  .cmd .ctxt .s { font-size: .78rem; color: var(--dim); margin-top: 3px; }
+  .cmd button { background: var(--fc); color: #fff; border: none; border-radius: 10px; padding: 11px 20px;
+    font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 6px 16px -6px rgba(200,32,58,.6); }
+  .cmd button:hover { background: var(--fc-br); }
+
+  .section-label { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.4px; color: var(--mute);
+    font-weight: 700; margin: 24px 2px 12px; display: block; }
+
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .c3d { position: relative; padding: 18px 18px 16px; border-radius: 15px;
+    background: linear-gradient(158deg, rgba(255,255,255,.06), rgba(255,255,255,.018));
+    border: 1px solid rgba(255,255,255,.08); border-top-color: rgba(255,255,255,.16);
+    box-shadow: 0 16px 26px -14px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.08);
+    transition: transform .25s ease, box-shadow .25s ease; transform: perspective(900px) rotateX(0deg); }
+  .c3d:hover { transform: perspective(900px) translateY(-4px) rotateX(5deg); }
+  .c3d .ico { position: absolute; top: 15px; right: 15px; }
+  .c3d .ico svg { width: 25px; height: 25px; stroke-width: 1.9; fill: none; }
+  .c3d .num { font-size: 2.4rem; font-weight: 800; line-height: 1; letter-spacing: -1.5px; }
+  .c3d .lbl { font-size: .75rem; color: var(--dim); margin-top: 7px; font-weight: 500; }
+  .c3d .hint { font-size: .65rem; color: var(--mute); margin-top: 2px; }
+
+  .newbar { display: flex; justify-content: flex-end; margin-top: 16px; }
+  .btn-new { background: var(--fc); color: #fff; border: none; border-radius: 10px; padding: 10px 18px;
+    font-size: .82rem; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 6px 16px -6px rgba(200,32,58,.6); }
+  .btn-new:hover { background: var(--fc-br); }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
+  .block { padding: 16px 18px 18px; background: rgba(255,255,255,.022); border: 1px solid rgba(255,255,255,.055); border-radius: 16px; }
+  .block-label { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.4px; color: var(--mute); font-weight: 700; margin-bottom: 14px; display:block; }
+  .foco-item { display: flex; align-items: center; gap: 12px; padding: 11px 4px; border-bottom: 1px solid rgba(255,255,255,.05); }
+  .foco-item:last-child { border-bottom: none; }
+  .foco-bar { width: 3px; height: 36px; border-radius: 3px; flex-shrink: 0; }
+  .foco-body { flex: 1; }
+  .foco-t { font-size: .86rem; font-weight: 600; }
+  .foco-m { font-size: .7rem; color: var(--mute); margin-top: 2px; }
+  .ava { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,.06); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: .68rem; font-weight: 700; color: var(--fc-br); }
+  .chip { font-size: .6rem; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; padding: 3px 9px; border-radius: 99px; white-space: nowrap; }
+  .chip.crit { background: rgba(229,72,77,.16); color: #ff8b8f; }
+  .chip.alta { background: rgba(224,184,58,.16); color: #e8c558; }
+  .flame { font-size: .9rem; }
+
+  .seg { display: inline-flex; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 3px; }
+  .seg button { background: none; border: none; color: var(--dim); padding: 7px 16px; border-radius: 8px; font-size: .78rem; cursor: pointer; font-family: inherit; font-weight: 600; }
+  .seg button.active { background: var(--fc); color: #fff; }
+  .story { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .story .tt h2 { font-size: 1.18rem; font-weight: 700; letter-spacing: -.4px; }
+  .story .tt p { font-size: .82rem; color: var(--dim); margin-top: 3px; }
+  .story .seg { margin-left: auto; }
+
+  .kb { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .kb-col { background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.05); border-radius: 13px; padding: 11px 11px 5px; }
+  .kb-head { display: flex; justify-content: space-between; align-items: center; font-size: .64rem; text-transform: uppercase; letter-spacing: .6px; color: var(--mute); font-weight: 700; margin-bottom: 11px; }
+  .kb-head .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .kb-card { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); border-radius: 10px; padding: 9px 11px; margin-bottom: 8px; }
+  .kb-card.fire { border-color: var(--orange); background: linear-gradient(180deg, rgba(224,125,47,.14), rgba(255,255,255,.03)); }
+  .kb-card .t { font-size: .73rem; font-weight: 600; line-height: 1.3; }
+  .kb-card .m { font-size: .6rem; color: var(--mute); margin-top: 5px; }
+
+  .appr { padding: 16px 18px; border: 1px solid rgba(255,255,255,.07); border-radius: 14px; background: rgba(255,255,255,.022); margin-bottom: 12px; }
+  .appr .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .appr h4 { font-size: .92rem; font-weight: 700; }
+  .appr .meta { font-size: .74rem; color: var(--dim); margin-bottom: 14px; display: flex; gap: 16px; flex-wrap: wrap; }
+  .appr .meta b { color: var(--txt); }
+  .appr .acts { display: flex; gap: 8px; }
+  .btn-ap { background: var(--green); color: #08210a; border: none; border-radius: 9px; padding: 9px 18px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: .82rem; }
+  .btn-rp { background: transparent; border: 1px solid rgba(229,72,77,.5); color: #ff8b8f; border-radius: 9px; padding: 9px 18px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: .82rem; }
+  .ph { color: var(--mute); font-size: .85rem; padding: 30px 4px; }
+</style>
+
+<div class="stage">
+  <div class="win">
+    <div class="chrome">
+      <div class="brand">
+        <span class="logo"><b>F<small>c</small></b></span>
+        <div class="wm">Gestão de Demandas<span>Isabela de Freitas · Gestora</span></div>
+      </div>
+      <div class="winbtns">
+        <div class="bell-wrap">
+          <div class="bell">
+            <svg class="ic" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            <span class="badge">5</span>
+          </div>
+          <div class="drop">
+            <div class="drop-h"><span>Notificações</span><a>Marcar todas como lidas</a></div>
+            <div class="ntf unread"><span class="nd"></span><div><div class="nt">Layanne solicitou sua aprovação — DEM-033.</div><div class="ntime">há 8 min</div></div></div>
+            <div class="ntf unread"><span class="nd"></span><div><div class="nt">Bianca solicitou sua aprovação — DEM-030.</div><div class="ntime">há 40 min</div></div></div>
+            <div class="ntf read"><span class="nd"></span><div><div class="nt">Sua solicitação DEM-022 foi aprovada por Jurandir.</div><div class="ntime">ontem</div></div></div>
+          </div>
+        </div>
+        <svg class="ic theme" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+        <svg class="ic" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+        <svg class="ic close" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-t="painel">Painel</button>
+      <button class="tab" data-t="quadro">Quadro</button>
+      <button class="tab" data-t="calendario">Calendário</button>
+      <button class="tab" data-t="listagem">Listagem</button>
+      <button class="tab" data-t="aprovacoes">Aprovações <span class="pill">3</span></button>
+      <button class="tab" data-t="historico">Histórico</button>
+    </div>
+
+    <div class="panel">
+      <div id="tab-painel">
+        <div class="hello">
+          <h1>Boa tarde, Isabela.</h1>
+          <p class="sentence">Você tem <b class="n-yellow">2</b> demandas em andamento e <b class="n-orange">1</b> a vencer.
+            <b class="n-fc">3</b> aprovações aguardam você e sua equipe tem <b class="n-red">2</b> críticas atrasadas.</p>
+        </div>
+
+        <div class="cmd">
+          <div class="big">3</div>
+          <div class="ctxt">
+            <div class="t">Aprovações aguardando você</div>
+            <div class="s">Solicitações dos seus liderados — decida para liberar a execução.</div>
+          </div>
+          <button>Revisar aprovações</button>
+        </div>
+
+        <span class="section-label">Suas demandas</span>
+        <div class="cards">
+          <div class="c3d">
+            <span class="ico"><svg viewBox="0 0 24 24" stroke="#e0b83a" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+            <div class="num" style="color:var(--yellow)">2</div><div class="lbl">Em andamento</div><div class="hint">ativas agora</div>
+          </div>
+          <div class="c3d">
+            <span class="ico"><svg viewBox="0 0 24 24" stroke="#e07d2f" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+            <div class="num" style="color:var(--orange)">1</div><div class="lbl">A vencer</div><div class="hint">próximos 7 dias</div>
+          </div>
+          <div class="c3d">
+            <span class="ico"><svg viewBox="0 0 24 24" stroke="#e5484d" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg></span>
+            <div class="num" style="color:var(--red)">1</div><div class="lbl">Atrasada</div><div class="hint">requer atenção</div>
+          </div>
+          <div class="c3d">
+            <span class="ico"><svg viewBox="0 0 24 24" stroke="#5fb0e8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <div class="num" style="color:var(--lblue)">1</div><div class="lbl">Aguardando aprovação</div><div class="hint">na fila do Jurandir</div>
+          </div>
+        </div>
+
+        <div class="newbar"><button class="btn-new">+ Nova demanda</button></div>
+
+        <div class="row2">
+          <div class="block">
+            <span class="block-label">Foco de hoje — suas demandas</span>
+            <div class="foco-item">
+              <div class="foco-bar" style="background:var(--red)"></div>
+              <div class="foco-body"><div class="foco-t">Política de retenção de dados</div><div class="foco-m">DEM-019 · atrasada 1 dia</div></div>
+              <span class="chip alta">Alta</span>
+            </div>
+            <div class="foco-item">
+              <div class="foco-bar" style="background:var(--orange)"></div>
+              <div class="foco-body"><div class="foco-t">Revisão da matriz de riscos</div><div class="foco-m">DEM-024 · vence em 2 dias</div></div>
+              <span class="chip alta">Alta</span>
+            </div>
+          </div>
+
+          <div class="block">
+            <span class="block-label">A quem cobrar — equipe</span>
+            <div class="foco-item">
+              <span class="ava">LS</span>
+              <div class="foco-body"><div class="foco-t">Layanne Santos</div><div class="foco-m">2 críticas atrasadas · 1 aguardando você</div></div>
+              <span class="chip crit">2 críticas</span>
+            </div>
+            <div class="foco-item">
+              <span class="ava">AC</span>
+              <div class="foco-body"><div class="foco-t">Ângelo Constâncio</div><div class="foco-m">1 atrasada · 2 em andamento</div></div>
+              <span class="chip alta">1 atrasada</span>
+            </div>
+            <div class="foco-item">
+              <span class="ava">BB</span>
+              <div class="foco-body"><div class="foco-t">Bianca Bione</div><div class="foco-m">1 aguardando sua aprovação</div></div>
+              <span class="chip alta">aprovar</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-quadro" style="display:none">
+        <div class="story">
+          <div class="tt"><h2>Quadro</h2><p>Veja só o que é seu ou o quadro completo da equipe.</p></div>
+          <div class="seg">
+            <button class="active" data-scope="minhas">Minhas</button>
+            <button data-scope="equipe">Equipe</button>
+          </div>
+        </div>
+        <div class="kb">
+          <div class="kb-col">
+            <div class="kb-head"><span>Backlog</span><span class="dot" style="background:var(--mute)"></span></div>
+            <div class="kb-card"><div class="t">Mapa de riscos — Fiscal</div><div class="m">DEM-027 · Ângelo</div></div>
+          </div>
+          <div class="kb-col">
+            <div class="kb-head"><span>Andamento</span><span class="dot" style="background:var(--yellow)"></span></div>
+            <div class="kb-card fire"><div class="t">🔥 Política de retenção de dados</div><div class="m">DEM-019 · você</div></div>
+            <div class="kb-card"><div class="t">Cruzamento LGPD — RH</div><div class="m">DEM-033 · Layanne</div></div>
+          </div>
+          <div class="kb-col">
+            <div class="kb-head"><span>Aguardando</span><span class="dot" style="background:var(--orange)"></span></div>
+            <div class="kb-card"><div class="t">Due diligence fornecedor</div><div class="m">DEM-030 · Bianca</div></div>
+          </div>
+          <div class="kb-col">
+            <div class="kb-head"><span>Concluído</span><span class="dot" style="background:var(--green)"></span></div>
+            <div class="kb-card"><div class="t">Revisão de políticas</div><div class="m">DEM-012 · você</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-calendario" style="display:none"><div class="ph">Calendário — mesmo do usuário, com alternância Minhas ⇄ Equipe.</div></div>
+      <div id="tab-listagem" style="display:none"><div class="ph">Listagem — tabela com alternância Minhas ⇄ Equipe.</div></div>
+
+      <div id="tab-aprovacoes" style="display:none">
+        <div class="story"><div class="tt"><h2>Aprovações pendentes</h2><p>Solicitações dos seus liderados aguardando sua decisão.</p></div></div>
+        <div class="appr">
+          <div class="top"><h4>DEM-033 · Cruzamento LGPD — RH</h4><span class="chip crit">Crítica</span></div>
+          <div class="meta"><span>Solicitante: <b>Layanne Santos</b></span><span>Setor: <b>CI, Riscos &amp; Compliance</b></span><span>Pedida: <b>há 8 min</b></span></div>
+          <div class="acts"><button class="btn-ap">✓ Aprovar</button><button class="btn-rp">✗ Reprovar</button></div>
+        </div>
+        <div class="appr">
+          <div class="top"><h4>DEM-030 · Due diligence fornecedor</h4><span class="chip alta">Alta</span></div>
+          <div class="meta"><span>Solicitante: <b>Bianca Bione</b></span><span>Setor: <b>CI, Riscos &amp; Compliance</b></span><span>Pedida: <b>há 40 min</b></span></div>
+          <div class="acts"><button class="btn-ap">✓ Aprovar</button><button class="btn-rp">✗ Reprovar</button></div>
+        </div>
+        <div class="appr">
+          <div class="top"><h4>DEM-028 · Acesso a dados de RH</h4><span class="chip alta">Alta</span></div>
+          <div class="meta"><span>Solicitante: <b>Ângelo Constâncio</b></span><span>Setor: <b>CI, Riscos &amp; Compliance</b></span><span>Pedida: <b>ontem</b></span></div>
+          <div class="acts"><button class="btn-ap">✓ Aprovar</button><button class="btn-rp">✗ Reprovar</button></div>
+        </div>
+      </div>
+
+      <div id="tab-historico" style="display:none"><div class="ph">Histórico — movimentações das suas demandas e das aprovações que você decidiu.</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var tabs = document.querySelectorAll('.tab');
+    var ids = ['painel', 'quadro', 'calendario', 'listagem', 'aprovacoes', 'historico'];
+    function show(t) {
+      tabs.forEach(function (x) { x.classList.remove('active'); });
+      var btn = [].slice.call(tabs).find(function (x) { return x.getAttribute('data-t') === t; });
+      if (btn) btn.classList.add('active');
+      ids.forEach(function (id) { var el = document.getElementById('tab-' + id); if (el) el.style.display = (id === t) ? '' : 'none'; });
+    }
+    tabs.forEach(function (t) { t.addEventListener('click', function () { show(t.getAttribute('data-t')); }); });
+    var cmdBtn = document.querySelector('.cmd button');
+    if (cmdBtn) cmdBtn.addEventListener('click', function () { show('aprovacoes'); });
+
+    var scope = document.querySelectorAll('.seg button');
+    scope.forEach(function (b) { b.addEventListener('click', function () {
+      scope.forEach(function (x) { x.classList.remove('active'); }); b.classList.add('active');
+    }); });
+
+    var bell = document.querySelector('.bell');
+    var drop = document.querySelector('.drop');
+    bell.addEventListener('click', function (e) { e.stopPropagation(); drop.classList.toggle('open'); });
+    document.addEventListener('click', function (e) { if (!e.target.closest('.bell-wrap')) drop.classList.remove('open'); });
+  })();
+</script>
