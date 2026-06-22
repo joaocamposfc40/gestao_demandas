@@ -715,6 +715,11 @@
   .cal-mcard .cmc-t { font-size: .73rem; font-weight: 600; line-height: 1.3; }
   .cal-mcard .cmc-m { font-size: .6rem; color: var(--text-mute); margin-top: 3px; }
   .cal-month .cm-empty { font-size: .72rem; color: var(--text-mute); padding: 10px 2px; }
+
+  /* "Para quem" em destaque + ofuscar o restante até escolher */
+  #iParaRow select { border-color: var(--accent); }
+  .para-hint { font-size: .72rem; color: var(--accent-bright); margin-top: 6px; }
+  .form-dim { opacity: .4; filter: saturate(.5); pointer-events: none; transition: opacity .2s ease, filter .2s ease; }
 </style>
 </head>
 <body class="locked">
@@ -745,8 +750,6 @@
     <div class="wm">Gestão de Demandas<span>Auditoria de Dados · Ferreira Costa</span></div>
   </div>
   <div class="header-actions">
-    <button class="btn-icon new-btn" onclick="openModal()" title="Nova demanda">+</button>
-    <button class="btn btn-ghost" onclick="openSolicitar()" title="Solicitar demanda a outra pessoa" style="padding:8px 12px;font-size:.8rem;flex-shrink:0">Solicitar</button>
     <div class="sync-chip" id="syncChip" onclick="refreshData()" title="Clique para atualizar os dados">
       <span class="dot"></span><span id="syncLabel">Carregando...</span>
     </div>
@@ -899,7 +902,12 @@
   <div class="modal">
     <h2 id="modalTitle">Nova demanda</h2>
     <form id="taskForm" onsubmit="saveTask(event)">
-      <div class="form-grid">
+      <div class="full" id="iParaRow" style="margin-bottom:16px">
+        <label>Para quem</label>
+        <select id="iPara" onchange="onParaChange()"></select>
+        <div class="para-hint" id="iParaHint">Escolha quem vai cuidar da demanda para liberar o restante.</div>
+      </div>
+      <div class="form-grid" id="taskFormRest">
         <div class="full">
           <label>Título</label>
           <input type="text" id="iTitulo" required placeholder="Ex.: Revisão da base de fornecedores">
@@ -944,7 +952,7 @@
           <label>Prazo</label>
           <input type="date" id="iPrazo">
         </div>
-        <div>
+        <div class="owner-only">
           <label>Status</label>
           <select id="iStatus">
             <option value="backlog">Backlog</option>
@@ -954,7 +962,7 @@
             <option value="concluido">Concluído</option>
           </select>
         </div>
-        <div class="full">
+        <div class="full owner-only">
           <label>Progresso</label>
           <div class="prog-input-wrap">
             <input type="range" id="iProgresso" min="0" max="100" step="5" value="0"
@@ -962,7 +970,7 @@
             <span class="prog-val" id="progVal">0%</span>
           </div>
         </div>
-        <div class="full">
+        <div class="full owner-only">
           <label>Aprovação do gestor</label>
           <div class="appr-box" id="apprBox">
             <input type="checkbox" id="iAprovacao">
@@ -978,68 +986,7 @@
         <button type="button" class="btn btn-danger" id="btnDelete" style="display:none" onclick="deleteTask()">Excluir</button>
         <div class="right">
           <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-          <button type="submit" class="btn">Salvar</button>
-        </div>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Modal: Solicitar demanda -->
-<div class="overlay" id="solicitarOverlay" onclick="if(event.target===this) closeSolicitar()">
-  <div class="modal">
-    <h2>Solicitar demanda a outra pessoa</h2>
-    <form id="solicitarForm" onsubmit="enviarSolicitacao(event)">
-      <div class="form-grid">
-        <div class="full">
-          <label>Para quem</label>
-          <select id="sPara"></select>
-        </div>
-        <div class="full">
-          <label>Título</label>
-          <input type="text" id="sTitulo" required placeholder="O que você precisa que a pessoa faça">
-        </div>
-        <div class="full">
-          <label>Descrição</label>
-          <textarea id="sDescricao" placeholder="Detalhes (opcional)"></textarea>
-        </div>
-        <div>
-          <label>Setor</label>
-          <select id="sSetor"></select>
-        </div>
-        <div>
-          <label>Tipo</label>
-          <select id="sTipo">
-            <option value="principal">Principal</option>
-            <option value="paralela">Paralela</option>
-            <option value="oportunidade">Oportunidade de melhoria</option>
-          </select>
-        </div>
-        <div>
-          <label>Prioridade</label>
-          <select id="sPrioridade">
-            <option value="alta">Alta</option>
-            <option value="media" selected>Média</option>
-            <option value="baixa">Baixa</option>
-          </select>
-        </div>
-        <div>
-          <label>Relevância</label>
-          <select id="sRelevancia">
-            <option value="normal" selected>Normal</option>
-            <option value="alta">Alta</option>
-            <option value="critica">⚡ Crítica</option>
-          </select>
-        </div>
-        <div class="full">
-          <label>Prazo sugerido</label>
-          <input type="date" id="sPrazo">
-        </div>
-      </div>
-      <div class="modal-actions">
-        <div class="right">
-          <button type="button" class="btn btn-ghost" onclick="closeSolicitar()">Cancelar</button>
-          <button type="submit" class="btn" id="sBtn">Enviar solicitação</button>
+          <button type="submit" class="btn" id="saveBtn">Salvar</button>
         </div>
       </div>
     </form>
@@ -1623,7 +1570,12 @@ function openModal(id) {
   const f = document.getElementById("taskForm");
   f.reset();
   document.getElementById("progVal").textContent = "0%";
+  const paraRow = document.getElementById("iParaRow");
   if (id) {
+    paraRow.style.display = "none";
+    document.getElementById("taskFormRest").classList.remove("form-dim");
+    const sb2 = document.getElementById("saveBtn"); sb2.disabled = false; sb2.textContent = "Salvar";
+    setOwnerOnly(true);
     const t = tasks.find(x => String(x.id) === String(id));
     if (!t) return;
     document.getElementById("modalTitle").textContent = (t.code ? t.code + " — " : "") + "Editar demanda";
@@ -1640,10 +1592,38 @@ function openModal(id) {
     document.getElementById("progVal").textContent = (t.progresso || 0) + "%";
     setupApprovalBox(t);
   } else {
+    paraRow.style.display = "block";
+    const me = currentUser && currentUser.id;
+    const meNome = currentUser ? (currentUser.nome || "Você") : "Você";
+    let opts = `<option value="">Selecione a pessoa...</option>`;
+    if (me) opts += `<option value="${me}">${esc(meNome)} (você)</option>`;
+    const others = Object.values(PROFILES_BY_ID)
+      .filter(p => String(p.id) !== String(me))
+      .sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
+    opts += others.map(p => `<option value="${p.id}">${esc(p.nome)}</option>`).join("");
+    document.getElementById("iPara").innerHTML = opts;
     setupApprovalBox(null);
+    onParaChange();
   }
   document.getElementById("overlay").classList.add("open");
-  document.getElementById("iTitulo").focus();
+  (id ? document.getElementById("iTitulo") : document.getElementById("iPara")).focus();
+}
+
+function setOwnerOnly(show) {
+  document.querySelectorAll(".owner-only").forEach(el => el.style.display = show ? "" : "none");
+}
+function onParaChange() {
+  if (editingId) return;
+  const para = document.getElementById("iPara").value;
+  const has = !!para;
+  const isSelf = has && currentUser && String(para) === String(currentUser.id);
+  document.getElementById("taskFormRest").classList.toggle("form-dim", !has);
+  const btn = document.getElementById("saveBtn");
+  btn.disabled = !has;
+  btn.textContent = (!has || isSelf) ? "Salvar" : "Enviar solicitação";
+  setOwnerOnly(isSelf);
+  const hint = document.getElementById("iParaHint");
+  if (hint) hint.style.display = has ? "none" : "block";
 }
 
 function setupApprovalBox(t) {
@@ -1682,6 +1662,37 @@ function closeModal() {
 
 async function saveTask(e) {
   e.preventDefault();
+
+  // Nova demanda PARA OUTRA PESSOA = solicitação (ela aceita/recusa)
+  if (!editingId) {
+    const para = document.getElementById("iPara").value;
+    if (!para) { alert("Escolha para quem é a demanda."); return; }
+    if (currentUser && String(para) !== String(currentUser.id)) {
+      if (!sb) { alert("Sem conexão com o servidor."); return; }
+      const btn = document.getElementById("saveBtn"); btn.disabled = true; btn.textContent = "Enviando...";
+      try {
+        const { error } = await sb.rpc("solicitar_demanda", {
+          p_para: para,
+          p_titulo: document.getElementById("iTitulo").value.trim(),
+          p_descricao: document.getElementById("iDescricao").value.trim(),
+          p_setor: document.getElementById("iSetor").value,
+          p_tipo: document.getElementById("iTipo").value,
+          p_prioridade: document.getElementById("iPrioridade").value,
+          p_relevancia: document.getElementById("iRelevancia").value,
+          p_prazo: document.getElementById("iPrazo").value || null,
+        });
+        if (error) throw error;
+        showToast("Solicitação enviada 📨", nomeDe(para) + " foi notificado(a).");
+        closeModal();
+        await loadSolicitacoes();
+      } catch (err) {
+        alert("Falha ao solicitar: " + (err.message || err));
+        btn.disabled = false; btn.textContent = "Enviar solicitação";
+      }
+      return;
+    }
+  }
+
   const wantApproval = document.getElementById("iAprovacao").checked && !document.getElementById("iAprovacao").disabled;
   const data = {
     titulo: document.getElementById("iTitulo").value.trim(),
@@ -1987,7 +1998,7 @@ function renderPainel() {
 
 fillSelect("iSetor", SETORES, false);
 fillSelect("iSolicitante", SOLICITANTES, false);
-document.addEventListener("keydown", e => { if (e.key === "Escape") { closeModal(); closeSolicitar(); } });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
 
 applyTheme(localStorage.getItem("theme") || "light");
 
@@ -2159,42 +2170,6 @@ async function loadSolicitacoes() {
 function solicPendentesRecebidas() {
   if (!currentUser) return [];
   return solicitacoes.filter(s => s.status === "pendente" && String(s.para_user_id) === String(currentUser.id));
-}
-function openSolicitar() {
-  document.getElementById("solicitarForm").reset();
-  const me = currentUser && currentUser.id;
-  const people = Object.values(PROFILES_BY_ID)
-    .filter(p => String(p.id) !== String(me))
-    .sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
-  document.getElementById("sPara").innerHTML = `<option value="">Selecione a pessoa...</option>`
-    + people.map(p => `<option value="${p.id}">${esc(p.nome)}${p.matricula ? " · " + p.matricula : ""}</option>`).join("");
-  document.getElementById("sSetor").innerHTML = SETORES.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
-  document.getElementById("solicitarOverlay").classList.add("open");
-}
-function closeSolicitar() { document.getElementById("solicitarOverlay").classList.remove("open"); }
-async function enviarSolicitacao(e) {
-  e.preventDefault();
-  const para = document.getElementById("sPara").value;
-  if (!para) { alert("Escolha para quem enviar."); return; }
-  if (!sb) { alert("Sem conexão com o servidor."); return; }
-  const btn = document.getElementById("sBtn"); btn.disabled = true; btn.textContent = "Enviando...";
-  try {
-    const { error } = await sb.rpc("solicitar_demanda", {
-      p_para: para,
-      p_titulo: document.getElementById("sTitulo").value.trim(),
-      p_descricao: document.getElementById("sDescricao").value.trim(),
-      p_setor: document.getElementById("sSetor").value,
-      p_tipo: document.getElementById("sTipo").value,
-      p_prioridade: document.getElementById("sPrioridade").value,
-      p_relevancia: document.getElementById("sRelevancia").value,
-      p_prazo: document.getElementById("sPrazo").value || null,
-    });
-    if (error) throw error;
-    showToast("Solicitação enviada 📨", "A pessoa foi notificada.");
-    closeSolicitar();
-    await loadSolicitacoes();
-  } catch (err) { alert("Falha ao enviar: " + (err.message || err)); }
-  btn.disabled = false; btn.textContent = "Enviar solicitação";
 }
 async function responderSolicitacao(id, aceitar) {
   let obs = null;
