@@ -14,4 +14,4 @@ com o Supabase.
 Arquivos estáticos via **GitHub Pages**. Back-end (banco, autenticação e RLS) no **Supabase**
 (a chave *publishable* exposta no HTML é segura; a proteção real é a RLS).
 
-> Acesso restrito aos colaboradores cadastrados da área.
+> Acesso restrito aos colaboradores cadastrados da área!
