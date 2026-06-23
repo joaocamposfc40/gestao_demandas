@@ -1179,14 +1179,10 @@ async function loadFromSupabase() {
     if (error) throw error;
     sbOnline = true;
 
-    if (data.length === 0 && tasks.length > 0) {
-      // primeira sincronização: sobe as demandas locais para o banco
-      const { data: inserted, error: insErr } = await sb.from("demandas").insert(tasks.map(taskToRow)).select();
-      if (insErr) throw insErr;
-      tasks = inserted.map(rowToTask);
-    } else {
-      tasks = data.map(rowToTask);
-    }
+    // O banco é a ÚNICA fonte de verdade. NUNCA re-subir o cache local:
+    // um cache antigo repovoaria o banco com dados velhos/corrompidos
+    // (ex.: setor errado), desfazendo correções. localStorage é só leitura/offline.
+    tasks = data.map(rowToTask);
 
     const { data: logs } = await sb.from("demandas_log")
       .select("*").order("created_at", { ascending: false }).limit(500);
@@ -1609,7 +1605,7 @@ function openModal(id) {
     document.getElementById("progVal").textContent = (t.progresso || 0) + "%";
     document.getElementById("iConfidencial").checked = !!t.confidencial;
     document.getElementById("iAutoSetor").textContent = t.setor || "—";
-    document.getElementById("iAutoSetorDem").textContent = t.setorDemandante || (currentUser && currentUser.setor) || "—";
+    document.getElementById("iAutoSetorDem").textContent = t.setorDemandante || "—";
     document.getElementById("iAutoDemandante").textContent = t.solicitante || "—";
     setupApprovalBox(t);
   } else {
