@@ -185,6 +185,23 @@
     color: rgba(255,255,255,.11); text-transform: uppercase;
     font-family: 'Courier New', monospace;
   }
+  /* véu de transição dark → light (revelação circular) */
+  #veil {
+    position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+    background: #eef0f4; clip-path: circle(0% at 50% 52%);
+    transition: clip-path .6s cubic-bezier(.7,0,.3,1);
+  }
+  #veil.show { clip-path: circle(150% at 50% 52%); }
+  #veil .veil-logo {
+    position: absolute; left: 50%; top: 52%; transform: translate(-50%,-50%) scale(.6);
+    width: 64px; height: 64px; border-radius: 50%; background: #C8203A;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity .35s ease .15s, transform .45s ease .15s;
+    box-shadow: 0 6px 24px rgba(200,32,58,.4);
+  }
+  #veil.show .veil-logo { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  #veil .veil-logo b { color: #fff; font-weight: 900; font-size: 1.5rem; letter-spacing: -1px; }
+  #veil .veil-logo b small { font-size: 1.1rem; }
 </style>
 </head>
 <body>
@@ -221,21 +238,21 @@
         </div>
         <span class="m-arrow">›</span>
       </div>
-      <div class="m-item disabled" data-href="">
+      <div class="m-item" data-href="app.html">
         <div class="m-icon">👁</div>
         <div class="m-body">
           <div class="m-name">Acompanhar Demandas</div>
-          <div class="m-desc">Visão de stakeholder — somente leitura</div>
+          <div class="m-desc">Painel, quadro e calendário das demandas</div>
         </div>
-        <span class="m-badge">Em breve</span>
+        <span class="m-arrow">›</span>
       </div>
-      <div class="m-item disabled" data-href="">
+      <div class="m-item" data-href="app.html#config">
         <div class="m-icon">⚙</div>
         <div class="m-body">
           <div class="m-name">Configurações</div>
           <div class="m-desc">Conta, senha e preferências</div>
         </div>
-        <span class="m-badge">Em breve</span>
+        <span class="m-arrow">›</span>
       </div>
     </nav>
 
@@ -246,6 +263,8 @@
     </div>
   </div>
 </div>
+
+<div id="veil"><div class="veil-logo"><b>F<small>c</small></b></div></div>
 
 <script>
   const allItems = Array.from(document.querySelectorAll('.m-item'));
@@ -259,9 +278,8 @@
 
   function goTo(href) {
     if (!href) return;
-    var screen = document.getElementById('menu-screen');
-    screen.style.opacity = '0';
-    setTimeout(function() { window.location.href = href; }, 480);
+    document.getElementById('veil').classList.add('show');   // revelação clara (dark → light)
+    setTimeout(function() { window.location.href = href; }, 620);
   }
 
   active.forEach(function(el, i) {

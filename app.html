@@ -298,9 +298,12 @@
   .tag.tipo-principal { background: var(--accent-soft); color: var(--accent-bright); }
   .tag.tipo-paralela { background: var(--blue-soft); color: var(--blue); }
   .tag.tipo-oportunidade { background: var(--green-soft); color: var(--green-bright); }
-  .tag.pri-alta { background: var(--red-soft); color: var(--red-bright); }
+  .tag.pri-critica { background: var(--red-soft); color: var(--red-bright); font-weight: 800; }
+  .tag.pri-alta { background: var(--orange-soft); color: var(--orange); }
   .tag.pri-media { background: var(--yellow-soft); color: var(--yellow); }
   .tag.pri-baixa { background: var(--surface-3); color: var(--text-dim); }
+  .tag.conf-tag { background: rgba(138,127,176,.18); color: #9a8fc0; }
+  body.light .tag.conf-tag { color: #5b5280; }
   .tag.st-backlog { background: var(--surface-3); color: var(--text-dim); }
   .tag.st-andamento { background: var(--blue-soft); color: var(--blue); }
   .tag.st-aguardando { background: var(--yellow-soft); color: var(--yellow); }
@@ -309,8 +312,9 @@
   .tag.rel-alta { background: var(--yellow-soft); color: var(--yellow); }
   .tag.rel-critica { background: var(--red-soft); color: var(--red-bright); font-weight: 800; }
   body.light .tag.pri-media, body.light .tag.st-aguardando, body.light .tag.rel-alta { color: #7a6520; }
-  body.light .tag.st-concluido, body.light .tag.tipo-oportunidade { color: #4a5e32; }
-  body.light .tag.rel-critica, body.light .tag.pri-alta { color: #8a1525; }
+  body.light .tag.pri-alta { color: #8a4a14; }
+  body.light .tag.st-concluido { color: #4a5e32; }
+  body.light .tag.rel-critica, body.light .tag.pri-critica { color: #8a1525; }
   .task h4 { font-size: .88rem; font-weight: 600; line-height: 1.4; margin-bottom: 10px; color: var(--text); }
   .task .t-meta { display: flex; justify-content: space-between; align-items: center; font-size: .71rem; color: var(--text-dim); margin-top: 8px; }
   .task .t-meta .due.late { color: var(--red-bright); font-weight: 700; }
@@ -720,6 +724,14 @@
   #iParaRow select { border-color: var(--accent); }
   .para-hint { font-size: .72rem; color: var(--accent-bright); margin-top: 6px; }
   .form-dim { opacity: .4; filter: saturate(.5); pointer-events: none; transition: opacity .2s ease, filter .2s ease; }
+  .auto-block { display: grid; grid-template-columns: repeat(3, 1fr); padding: 12px 14px;
+    background: var(--accent-soft); border: 1px solid rgba(200,32,58,.25); border-radius: var(--radius); }
+  @media (max-width: 560px) { .auto-block { grid-template-columns: 1fr; gap: 8px; } }
+  .auto-block .ab-item { display: flex; flex-direction: column; gap: 2px; padding: 0 8px; border-right: 1px solid rgba(200,32,58,.18); }
+  .auto-block .ab-item:last-child { border-right: none; }
+  .auto-block .ab-k { font-size: .6rem; text-transform: uppercase; letter-spacing: .6px; color: var(--text-mute); }
+  .auto-block .ab-v { font-size: .82rem; font-weight: 700; color: var(--text); }
+  .gestor-only { display: none; }
 </style>
 </head>
 <body class="locked">
@@ -771,8 +783,7 @@
       <span class="avatar" id="userAvatar">--</span>
       <span><span id="userNome">—</span><br><span class="u-perfil" id="userPerfil"></span></span>
     </span>
-    <button class="btn-icon" id="logoutBtn" onclick="doLogout()" title="Sair" style="display:none">🚪</button>
-    <button class="btn-icon close-btn" onclick="window.location.href='menu.html'" title="Fechar e voltar ao menu">✕</button>
+    <button class="btn-icon" id="gearBtn" onclick="openSettings()" title="Configurações" style="display:none">⚙</button>
   </div>
 </header>
 
@@ -839,10 +850,8 @@
               <th onclick="tblSort('id')">ID ↕</th>
               <th onclick="tblSort('titulo')">Demanda ↕</th>
               <th onclick="tblSort('setor')">Setor ↕</th>
-              <th onclick="tblSort('solicitante')">Solicitante ↕</th>
-              <th onclick="tblSort('tipo')">Tipo ↕</th>
+              <th onclick="tblSort('solicitante')">Demandante ↕</th>
               <th onclick="tblSort('prioridade')">Prioridade ↕</th>
-              <th onclick="tblSort('relevancia')">Relevância ↕</th>
               <th onclick="tblSort('prazo')">Prazo ↕</th>
               <th onclick="tblSort('status')">Status ↕</th>
             </tr>
@@ -908,49 +917,40 @@
         <div class="para-hint" id="iParaHint">Escolha quem vai cuidar da demanda para liberar o restante.</div>
       </div>
       <div class="form-grid" id="taskFormRest">
+        <div class="full auto-block" id="autoBlock">
+          <div class="ab-item"><span class="ab-k">Setor da demanda</span><span class="ab-v" id="iAutoSetor">—</span></div>
+          <div class="ab-item"><span class="ab-k">Setor do demandante</span><span class="ab-v" id="iAutoSetorDem">—</span></div>
+          <div class="ab-item"><span class="ab-k">Demandante</span><span class="ab-v" id="iAutoDemandante">—</span></div>
+        </div>
         <div class="full">
-          <label>Título</label>
+          <label>Título da demanda</label>
           <input type="text" id="iTitulo" required placeholder="Ex.: Revisão da base de fornecedores">
         </div>
         <div class="full">
-          <label>Descrição</label>
-          <textarea id="iDescricao" placeholder="Detalhes da demanda (opcional)"></textarea>
-        </div>
-        <div>
-          <label>Setor demandante</label>
-          <select id="iSetor"></select>
-        </div>
-        <div>
-          <label>Solicitante</label>
-          <select id="iSolicitante"></select>
-        </div>
-        <div>
-          <label>Tipo</label>
-          <select id="iTipo">
-            <option value="principal">Principal</option>
-            <option value="paralela">Paralela</option>
-            <option value="oportunidade">Oportunidade de melhoria</option>
-          </select>
-        </div>
-        <div>
-          <label>Prioridade</label>
-          <select id="iPrioridade">
-            <option value="alta">Alta</option>
-            <option value="media" selected>Média</option>
-            <option value="baixa">Baixa</option>
-          </select>
+          <label>Descrição <span style="color:var(--text-mute);font-size:.65rem;text-transform:none;letter-spacing:0">(opcional)</span></label>
+          <textarea id="iDescricao" placeholder="Detalhes da demanda"></textarea>
         </div>
         <div class="full">
-          <label>Relevância <span style="color:var(--text-mute);font-size:.65rem;text-transform:none;letter-spacing:0">— Normal: 1pt · Alta: 3pts · Crítica: 5pts</span></label>
-          <select id="iRelevancia">
-            <option value="normal" selected>Normal</option>
-            <option value="alta">Alta</option>
-            <option value="critica">⚡ Crítica</option>
-          </select>
+          <div class="appr-box">
+            <input type="checkbox" id="iPrioridade">
+            <div class="ab-body">
+              <div class="ab-title">Prioridade</div>
+              <div class="ab-sub">Marque para sinalizar como prioritária — a demanda recebe o destaque em chamas 🔥.</div>
+            </div>
+          </div>
         </div>
         <div>
           <label>Prazo</label>
           <input type="date" id="iPrazo">
+        </div>
+        <div class="full gestor-only" id="confRow">
+          <div class="appr-box">
+            <input type="checkbox" id="iConfidencial">
+            <div class="ab-body">
+              <div class="ab-title">Confidencial</div>
+              <div class="ab-sub">Oculta a demanda dos demais — só gestores do setor e a pessoa atribuída conseguem ver.</div>
+            </div>
+          </div>
         </div>
         <div class="owner-only">
           <label>Status</label>
@@ -993,6 +993,40 @@
   </div>
 </div>
 
+<!-- Configurações -->
+<div class="overlay" id="settingsOverlay" onclick="if(event.target===this) closeSettings()">
+  <div class="modal" style="max-width:440px">
+    <h2>Configurações</h2>
+    <div style="font-size:.82rem;color:var(--text-dim);margin-bottom:18px" id="settingsUserInfo">—</div>
+    <div>
+      <label>Nova senha</label>
+      <input type="password" id="setPass1" placeholder="Mínimo 6 caracteres">
+      <label>Confirmar nova senha</label>
+      <input type="password" id="setPass2" placeholder="Repita a senha">
+      <button class="btn" id="setPassBtn" onclick="salvarNovaSenha()" style="margin-top:10px">Salvar nova senha</button>
+      <div class="login-msg" id="setMsg"></div>
+    </div>
+    <div style="border-top:1px solid var(--border);margin-top:18px;padding-top:16px;display:flex;gap:10px">
+      <button class="btn btn-danger" onclick="doLogout()">Sair da conta</button>
+      <button class="btn btn-ghost" onclick="closeSettings()" style="margin-left:auto">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Troca de senha obrigatória (1º acesso) -->
+<div class="overlay" id="pwOverlay">
+  <div class="modal" style="max-width:420px">
+    <h2>Defina sua senha</h2>
+    <p style="font-size:.85rem;color:var(--text-dim);margin-bottom:16px">Por segurança, no primeiro acesso você precisa criar uma senha pessoal.</p>
+    <label>Nova senha</label>
+    <input type="password" id="pw1" placeholder="Mínimo 6 caracteres">
+    <label>Confirmar senha</label>
+    <input type="password" id="pw2" placeholder="Repita a senha">
+    <button class="btn" id="pwBtn" onclick="trocarSenhaPrimeiroAcesso()" style="width:100%;margin-top:12px">Salvar e continuar</button>
+    <div class="login-msg" id="pwMsg"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast">
   <span class="ico">🏆</span>
   <div><b id="toastTitle">Conquista!</b><small id="toastMsg"></small></div>
@@ -1005,8 +1039,7 @@ const SB_KEY = 'sb_publishable_OOb1PSmtQi25vI9G5ioEfA_-U5SZF8z';
 const sb = window.supabase ? window.supabase.createClient(SB_URL, SB_KEY) : null;
 let sbOnline = false;
 
-const SETORES = ["Auditoria de Dados", "Auditoria Interna", "Controles Internos, Riscos e Compliance", "ESG"];
-const SOLICITANTES = ["Jurandir", "Isabela", "Bianca", "Wilson", "Mac", "Rilma", "Angelo", "Castim"];
+/* SETORES vem do roster.js (fonte única) */
 const STATUS = [
   { id: "backlog",    label: "Backlog" },
   { id: "andamento",  label: "Em andamento" },
@@ -1016,7 +1049,7 @@ const STATUS = [
 ];
 const STATUS_LABEL = { backlog: "Backlog", andamento: "Em andamento", aguardando: "Aguardando", pausado: "Pausado", concluido: "Concluído" };
 const TIPO_LABEL = { principal: "Principal", paralela: "Paralela", oportunidade: "Oportunidade" };
-const PRI_LABEL = { alta: "Alta", media: "Média", baixa: "Baixa" };
+const PRI_LABEL = { baixa: "Baixa", media: "Média", alta: "Alta", critica: "Crítica" };
 const RELEVANCIA_LABEL = { normal: "Normal", alta: "Alta", critica: "Crítica" };
 const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
@@ -1103,12 +1136,12 @@ function taskToRow(t) {
     titulo: t.titulo,
     descricao: t.descricao || null,
     setor: t.setor,
+    setor_demandante: t.setorDemandante || null,
     solicitante: t.solicitante,
-    tipo: t.tipo,
     prioridade: t.prioridade,
     prazo: t.prazo || null,
     status: t.status,
-    relevancia: t.relevancia || 'normal',
+    confidencial: !!t.confidencial,
     progresso: t.progresso || 0,
     criada_em: t.criadaEm || today(),
     concluida_em: t.concluidaEm || null,
@@ -1121,12 +1154,12 @@ function rowToTask(r) {
     titulo: r.titulo,
     descricao: r.descricao || "",
     setor: r.setor,
+    setorDemandante: r.setor_demandante || "",
     solicitante: r.solicitante,
-    tipo: r.tipo,
     prioridade: r.prioridade,
     prazo: r.prazo || "",
     status: r.status,
-    relevancia: r.relevancia || 'normal',
+    confidencial: !!r.confidencial,
     progresso: r.progresso || 0,
     criadaEm: r.criada_em,
     concluidaEm: r.concluida_em || undefined,
@@ -1381,7 +1414,7 @@ function renderCalendar() {
       const late = t.status !== "concluido" && t.prazo < today();
       const color = t.status === "concluido" ? "var(--green)"
         : late ? "var(--red-bright)"
-        : t.relevancia === "critica" ? "var(--orange)"
+        : t.prioridade === "critica" ? "var(--orange)"
         : "var(--lblue)";
       return `<div class="cal-mcard" style="border-left-color:${color}" onclick="openModal('${t.id}')">
         <div class="cmc-day">${d}</div>
@@ -1430,19 +1463,17 @@ function renderTable() {
 
   document.getElementById("tblBody").innerHTML = data.map(t => {
     const late = t.status !== "concluido" && t.prazo && t.prazo < today();
-    const rel = t.relevancia || 'normal';
+    const crit = t.prioridade === 'critica';
     return `<tr onclick="openModal('${t.id}')">
-      <td style="font-size:.72rem;color:var(--text-dim);font-weight:700;white-space:nowrap">${t.code || "—"}</td>
+      <td style="font-size:.72rem;color:var(--text-dim);font-weight:700;white-space:nowrap">${t.code || "—"}${t.confidencial ? ' 🔒' : ''}</td>
       <td style="font-weight:600;max-width:260px">${esc(t.titulo)}</td>
       <td style="font-size:.74rem;color:var(--text-dim)">${esc(t.setor)}</td>
-      <td><span class="solicitante"><span class="avatar">${initials(t.solicitante)}</span> ${esc(t.solicitante)}</span></td>
-      <td><span class="tag tipo-${t.tipo}">${TIPO_LABEL[t.tipo]}</span></td>
-      <td><span class="tag pri-${t.prioridade}">${PRI_LABEL[t.prioridade]}</span></td>
-      <td><span class="tag rel-${rel}">${rel === 'critica' ? '⚡ ' : ''}${RELEVANCIA_LABEL[rel]}</span></td>
+      <td><span class="solicitante"><span class="avatar">${initials(t.solicitante || '?')}</span> ${esc(t.solicitante || '—')}</span></td>
+      <td>${crit ? '<span class="tag pri-critica">⚡ Prioridade</span>' : '—'}</td>
       <td style="white-space:nowrap;font-weight:600;color:${late ? 'var(--red)' : 'var(--text-dim)'}">${t.prazo ? fmtDate(t.prazo) : "—"}</td>
       <td><span class="tag st-${t.status}">${STATUS_LABEL[t.status]}</span></td>
     </tr>`;
-  }).join("") || `<tr style="cursor:default"><td colspan="9" style="text-align:center;color:var(--text-dim);padding:26px">Nenhuma demanda nesse filtro</td></tr>`;
+  }).join("") || `<tr style="cursor:default"><td colspan="7" style="text-align:center;color:var(--text-dim);padding:26px">Nenhuma demanda nesse filtro</td></tr>`;
 }
 
 /* ══════════ KANBAN ══════════ */
@@ -1461,40 +1492,29 @@ function renderBoard() {
 
   const base = applyFilters(scopeApply(tasks));
 
-  /* determina qual(is) card(s) está(ão) "pegando fogo" */
-  const criticas = base.filter(t => t.relevancia === 'critica' && t.status !== 'concluido' && t.prazo);
-  const minPrazo = criticas.length
-    ? criticas.reduce((m, t) => t.prazo < m ? t.prazo : m, criticas[0].prazo)
-    : null;
-  const onFireIds = new Set(
-    minPrazo ? criticas.filter(t => t.prazo === minPrazo).map(t => String(t.id)) : []
-  );
-
   board.innerHTML = STATUS.map(col => {
     const items = base.filter(t => t.status === col.id);
     const cards = items.map(t => {
       const late = t.status !== "concluido" && t.prazo && t.prazo < today();
       const prog = t.progresso || 0;
       const pColor = t.status === "concluido" ? "var(--green)" : prog >= 60 ? "var(--blue)" : "var(--yellow)";
-      const relCritica = t.relevancia === 'critica';
+      const critica = t.prioridade === 'critica';
       const isPendApr = t.aprovacao === 'pendente';
-      const isOnFire = onFireIds.has(String(t.id)) && !isPendApr;
-      const relTag = (t.relevancia && t.relevancia !== 'normal')
-        ? `<span class="tag rel-${t.relevancia}">${relCritica ? '⚡ ' : ''}${RELEVANCIA_LABEL[t.relevancia]}</span>` : '';
+      const isOnFire = critica && t.status !== 'concluido' && !isPendApr;  // toda prioritária pega fogo
       const apprBadge =
         t.aprovacao === 'pendente'  ? `<div class="appr-badge pendente">🔒 Aguardando aprovação${approverName(t) ? ' · ' + esc(approverName(t)) : ''}</div>` :
         t.aprovacao === 'reprovada' ? `<div class="appr-badge reprovada">⛔ Aprovação reprovada</div>` :
         t.aprovacao === 'aprovada'  ? `<div class="appr-badge aprovada">✓ Aprovada</div>` : '';
+      const confBadge = t.confidencial ? `<span class="tag conf-tag">🔒 Confidencial</span>` : '';
       const showOwner = isManagerView() && t.userId && String(t.userId) !== String(currentUser && currentUser.id);
       const ownerNm = showOwner ? ownerName(t.userId) : '';
-      return `<div class="task${relCritica ? ' rel-critica' : ''}${isOnFire ? ' on-fire' : ''}${isPendApr ? ' aguardando-aprov' : ''}" draggable="true" data-id="${t.id}" onclick="openModal('${t.id}')">
-        ${relCritica ? '<div class="t-critica-bar"></div>' : ''}
-        ${isOnFire ? '<div class="fire-selo">🔥 Mais urgente</div>' : ''}
+      return `<div class="task${critica ? ' rel-critica' : ''}${isOnFire ? ' on-fire' : ''}${isPendApr ? ' aguardando-aprov' : ''}" draggable="true" data-id="${t.id}" onclick="openModal('${t.id}')">
+        ${critica ? '<div class="t-critica-bar"></div>' : ''}
+        ${isOnFire ? '<div class="fire-selo">🔥 Prioridade</div>' : ''}
         ${t.code ? `<div class="t-id">${t.code}</div>` : ""}
         <div class="t-top">
-          <span class="tag tipo-${t.tipo}">${TIPO_LABEL[t.tipo]}</span>
-          <span class="tag pri-${t.prioridade}">${PRI_LABEL[t.prioridade]}</span>
-          ${relTag}
+          ${critica ? '<span class="tag pri-critica">⚡ Prioridade</span>' : ''}
+          ${confBadge}
         </div>
         ${apprBadge}
         <h4>${esc(t.titulo)}</h4>
@@ -1576,20 +1596,21 @@ function openModal(id) {
     document.getElementById("taskFormRest").classList.remove("form-dim");
     const sb2 = document.getElementById("saveBtn"); sb2.disabled = false; sb2.textContent = "Salvar";
     setOwnerOnly(true);
+    setGestorOnly(isGestorPerfil(currentUser && currentUser.perfil));
     const t = tasks.find(x => String(x.id) === String(id));
     if (!t) return;
     document.getElementById("modalTitle").textContent = (t.code ? t.code + " — " : "") + "Editar demanda";
     document.getElementById("iTitulo").value = t.titulo;
     document.getElementById("iDescricao").value = t.descricao || "";
-    document.getElementById("iSetor").value = t.setor;
-    document.getElementById("iSolicitante").value = t.solicitante;
-    document.getElementById("iTipo").value = t.tipo;
-    document.getElementById("iPrioridade").value = t.prioridade;
-    document.getElementById("iRelevancia").value = t.relevancia || 'normal';
+    document.getElementById("iPrioridade").checked = (t.prioridade === 'critica');
     document.getElementById("iPrazo").value = t.prazo || "";
     document.getElementById("iStatus").value = t.status;
     document.getElementById("iProgresso").value = t.progresso || 0;
     document.getElementById("progVal").textContent = (t.progresso || 0) + "%";
+    document.getElementById("iConfidencial").checked = !!t.confidencial;
+    document.getElementById("iAutoSetor").textContent = t.setor || "—";
+    document.getElementById("iAutoSetorDem").textContent = t.setorDemandante || (currentUser && currentUser.setor) || "—";
+    document.getElementById("iAutoDemandante").textContent = t.solicitante || "—";
     setupApprovalBox(t);
   } else {
     paraRow.style.display = "block";
@@ -1598,7 +1619,7 @@ function openModal(id) {
     let opts = `<option value="">Selecione a pessoa...</option>`;
     if (me) opts += `<option value="${me}">${esc(meNome)} (você)</option>`;
     const others = Object.values(PROFILES_BY_ID)
-      .filter(p => String(p.id) !== String(me))
+      .filter(p => String(p.id) !== String(me) && p.matricula !== '0')
       .sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
     opts += others.map(p => `<option value="${p.id}">${esc(p.nome)}</option>`).join("");
     document.getElementById("iPara").innerHTML = opts;
@@ -1612,6 +1633,15 @@ function openModal(id) {
 function setOwnerOnly(show) {
   document.querySelectorAll(".owner-only").forEach(el => el.style.display = show ? "" : "none");
 }
+function setGestorOnly(show) {
+  document.querySelectorAll(".gestor-only").forEach(el => el.style.display = show ? "block" : "none");
+}
+function fillAutoBlock(paraId) {
+  const alvo = paraId ? PROFILES_BY_ID[paraId] : null;
+  document.getElementById("iAutoSetor").textContent = alvo ? (alvo.setor || "—") : "—";
+  document.getElementById("iAutoSetorDem").textContent = (currentUser && currentUser.setor) || "—";
+  document.getElementById("iAutoDemandante").textContent = (currentUser && currentUser.nome) || "—";
+}
 function onParaChange() {
   if (editingId) return;
   const para = document.getElementById("iPara").value;
@@ -1622,6 +1652,8 @@ function onParaChange() {
   btn.disabled = !has;
   btn.textContent = (!has || isSelf) ? "Salvar" : "Enviar solicitação";
   setOwnerOnly(isSelf);
+  setGestorOnly(isGestorPerfil(currentUser && currentUser.perfil));
+  fillAutoBlock(para);
   const hint = document.getElementById("iParaHint");
   if (hint) hint.style.display = has ? "none" : "block";
 }
@@ -1671,15 +1703,16 @@ async function saveTask(e) {
       if (!sb) { alert("Sem conexão com o servidor."); return; }
       const btn = document.getElementById("saveBtn"); btn.disabled = true; btn.textContent = "Enviando...";
       try {
+        const alvo = PROFILES_BY_ID[para] || {};
+        const ehGestor = isGestorPerfil(currentUser && currentUser.perfil);
         const { error } = await sb.rpc("solicitar_demanda", {
           p_para: para,
           p_titulo: document.getElementById("iTitulo").value.trim(),
           p_descricao: document.getElementById("iDescricao").value.trim(),
-          p_setor: document.getElementById("iSetor").value,
-          p_tipo: document.getElementById("iTipo").value,
-          p_prioridade: document.getElementById("iPrioridade").value,
-          p_relevancia: document.getElementById("iRelevancia").value,
+          p_setor: alvo.setor || null,
+          p_prioridade: document.getElementById("iPrioridade").checked ? 'critica' : 'normal',
           p_prazo: document.getElementById("iPrazo").value || null,
+          p_confidencial: ehGestor && document.getElementById("iConfidencial").checked,
         });
         if (error) throw error;
         showToast("Solicitação enviada 📨", nomeDe(para) + " foi notificado(a).");
@@ -1694,18 +1727,22 @@ async function saveTask(e) {
   }
 
   const wantApproval = document.getElementById("iAprovacao").checked && !document.getElementById("iAprovacao").disabled;
+  const ehGestor = isGestorPerfil(currentUser && currentUser.perfil);
   const data = {
     titulo: document.getElementById("iTitulo").value.trim(),
     descricao: document.getElementById("iDescricao").value.trim(),
-    setor: document.getElementById("iSetor").value,
-    solicitante: document.getElementById("iSolicitante").value,
-    tipo: document.getElementById("iTipo").value,
-    prioridade: document.getElementById("iPrioridade").value,
-    relevancia: document.getElementById("iRelevancia").value,
+    prioridade: document.getElementById("iPrioridade").checked ? 'critica' : 'normal',
     prazo: document.getElementById("iPrazo").value,
     status: document.getElementById("iStatus").value,
     progresso: parseInt(document.getElementById("iProgresso").value) || 0,
+    confidencial: ehGestor && document.getElementById("iConfidencial").checked,
   };
+  if (!editingId) {
+    // demanda própria: setor da demanda = meu setor; demandante = eu
+    data.setor = (currentUser && currentUser.setor) || "";
+    data.setorDemandante = (currentUser && currentUser.setor) || "";
+    data.solicitante = (currentUser && currentUser.nome) || "";
+  }
   let task;
   if (editingId) {
     task = tasks.find(x => String(x.id) === String(editingId));
@@ -1787,44 +1824,38 @@ function render() {
 /* ══════════ ESCOPO Minhas / Equipe (gestores) ══════════ */
 let taskScope = 'minhas';
 function scopeApply(list) {
-  if (isManagerView() && taskScope === 'minhas') {
-    const id = currentUser && currentUser.id;
+  if (currentUser && currentUser.perfil !== 'individual' && taskScope === 'minhas') {
+    const id = currentUser.id;
     return list.filter(t => String(t.userId) === String(id));
   }
-  return list;
+  return list;   // 'equipe' (setor) ou perfil individual → o que a RLS já entrega
 }
 function setScope(s) { taskScope = s; renderFilters(); renderActiveDataView(); }
 
 /* ══════════ FILTROS (compartilhados: Quadro · Calendário · Listagem) ══════════ */
-let FILT = { busca: '', setor: '', solicitante: '', tipo: '', prioridade: '', relevancia: '' };
+let FILT = { busca: '', setor: '', prioridade: '' };
 function applyFilters(list) {
   const f = FILT, q = (f.busca || '').toLowerCase();
   return list.filter(t =>
     (!q || (t.titulo + ' ' + (t.descricao || '') + ' ' + (t.code || '')).toLowerCase().includes(q)) &&
     (!f.setor || t.setor === f.setor) &&
-    (!f.solicitante || t.solicitante === f.solicitante) &&
-    (!f.tipo || t.tipo === f.tipo) &&
-    (!f.prioridade || t.prioridade === f.prioridade) &&
-    (!f.relevancia || (t.relevancia || 'normal') === f.relevancia)
+    (!f.prioridade || t.prioridade === f.prioridade)
   );
 }
 function filterBarHTML() {
   const f = FILT;
   const sel = (cur, val, label) => `<option value="${esc(val)}"${cur === val ? ' selected' : ''}>${label}</option>`;
   const setores = SETORES.map(s => sel(f.setor, s, esc(s))).join('');
-  const solics = SOLICITANTES.map(s => sel(f.solicitante, s, s)).join('');
-  const scope = isManagerView()
+  const podeAlternar = currentUser && currentUser.perfil !== 'individual';
+  const scope = podeAlternar
     ? `<span class="scope-seg" style="margin-left:auto">
          <button class="${taskScope === 'minhas' ? 'active' : ''}" onclick="setScope('minhas')">Minhas</button>
-         <button class="${taskScope === 'equipe' ? 'active' : ''}" onclick="setScope('equipe')">Equipe</button>
+         <button class="${taskScope === 'equipe' ? 'active' : ''}" onclick="setScope('equipe')">Setor</button>
        </span>` : '';
   return `
     <input type="text" placeholder="🔍 Buscar demanda..." value="${f.busca ? esc(f.busca) : ''}" oninput="onFilter('busca', this.value)">
     <select onchange="onFilter('setor', this.value)"><option value="">Todos os setores</option>${setores}</select>
-    <select onchange="onFilter('solicitante', this.value)"><option value="">Todos os solicitantes</option>${solics}</select>
-    <select onchange="onFilter('tipo', this.value)"><option value="">Todos os tipos</option>${sel(f.tipo, 'principal', 'Principal')}${sel(f.tipo, 'paralela', 'Paralela')}${sel(f.tipo, 'oportunidade', 'Oportunidade de melhoria')}</select>
-    <select onchange="onFilter('prioridade', this.value)"><option value="">Todas as prioridades</option>${sel(f.prioridade, 'alta', 'Alta')}${sel(f.prioridade, 'media', 'Média')}${sel(f.prioridade, 'baixa', 'Baixa')}</select>
-    <select onchange="onFilter('relevancia', this.value)"><option value="">Todas as relevâncias</option>${sel(f.relevancia, 'normal', 'Normal')}${sel(f.relevancia, 'alta', 'Alta')}${sel(f.relevancia, 'critica', '⚡ Crítica')}</select>
+    <select onchange="onFilter('prioridade', this.value)"><option value="">Prioridade: todas</option>${sel(f.prioridade, 'critica', '⚡ Só prioritárias')}</select>
     <button class="btn btn-ghost" onclick="limparFiltros()">Limpar</button>
     ${scope}`;
 }
@@ -1838,6 +1869,7 @@ function renderActiveDataView() {
   if (activeTab === 'calendario') renderCalendar();
   if (activeTab === 'listagem') renderTable();
 }
+function limparFiltros() { FILT = { busca: '', setor: '', prioridade: '' }; renderFilters(); renderActiveDataView(); }
 function calScroll(dir) { const k = document.getElementById('calKanban'); if (k) k.scrollBy({ left: dir * 264, behavior: 'smooth' }); }
 
 /* ══════════ PAINEL (storytelling, por perfil) ══════════ */
@@ -1858,7 +1890,7 @@ function painelStats(list) {
   };
 }
 function onFireSet() {
-  const cr = tasks.filter(t => t.relevancia === 'critica' && t.status !== 'concluido' && t.prazo && t.aprovacao !== 'pendente');
+  const cr = tasks.filter(t => t.prioridade === 'critica' && t.status !== 'concluido' && t.prazo && t.aprovacao !== 'pendente');
   if (!cr.length) return new Set();
   const min = cr.reduce((m, t) => t.prazo < m ? t.prazo : m, cr[0].prazo);
   return new Set(cr.filter(t => t.prazo === min).map(t => String(t.id)));
@@ -1868,7 +1900,7 @@ function focoList(list) {
   const rank = t => {
     let s = 0;
     if (t.prazo && t.prazo < today()) s += 100;
-    if (t.relevancia === 'critica') s += 50;
+    if (t.prioridade === 'critica') s += 50;
     if (within7(t)) s += 20;
     if (aguardandoAprov(t)) s -= 200;
     return s;
@@ -1888,7 +1920,7 @@ function aQuemCobrar() {
   });
   return Object.keys(byOwner).map(uid => {
     const list = byOwner[uid];
-    const criticasAtr = list.filter(t => t.relevancia === 'critica' && t.status !== 'concluido' && t.prazo && t.prazo < today()).length;
+    const criticasAtr = list.filter(t => t.prioridade === 'critica' && t.status !== 'concluido' && t.prazo && t.prazo < today()).length;
     const atrasadas = list.filter(t => t.status !== 'concluido' && !aguardandoAprov(t) && t.prazo && t.prazo < today()).length;
     const pend = list.filter(t => t.aprovacao === 'pendente' && String(t.aprovadorId) === String(meId)).length;
     return { uid, nome: ownerName(uid), criticasAtr, atrasadas, pend, score: criticasAtr * 100 + atrasadas * 10 + pend };
@@ -1900,9 +1932,9 @@ function pCard(stroke, numColor, val, lbl, hint, paths) {
 }
 function focoItemHtml(t, fire) {
   const late = t.prazo && t.prazo < today() && t.status !== 'concluido';
-  const rel = t.relevancia || 'normal';
-  const barColor = late ? 'var(--red-bright)' : (rel === 'critica' ? 'var(--orange)' : (within7(t) ? 'var(--lblue)' : 'var(--text-mute)'));
-  const chip = rel !== 'normal' ? `<span class="tag rel-${rel}">${rel === 'critica' ? '⚡ ' : ''}${RELEVANCIA_LABEL[rel]}</span>` : '';
+  const crit = t.prioridade === 'critica';
+  const barColor = late ? 'var(--red-bright)' : (crit ? 'var(--orange)' : (within7(t) ? 'var(--lblue)' : 'var(--text-mute)'));
+  const chip = crit ? `<span class="tag pri-critica">⚡ Prioridade</span>` : '';
   const when = aguardandoAprov(t) ? 'aguardando aprovação' : (late ? 'atrasada' : (t.prazo ? 'vence ' + fmtDate(t.prazo) : 'sem prazo'));
   const flame = (fire.has(String(t.id))) ? '🔥 ' : '';
   return `<div class="li" style="cursor:pointer" onclick="openModal('${t.id}')">
@@ -1936,7 +1968,7 @@ function renderPainel() {
   let sentence;
   if (manager) {
     const aprov = pendingApprovals().length;
-    const teamCrit = tasks.filter(t => String(t.userId) !== String(currentUser.id) && t.relevancia === 'critica' && t.status !== 'concluido' && t.prazo && t.prazo < today()).length;
+    const teamCrit = tasks.filter(t => String(t.userId) !== String(currentUser.id) && t.prioridade === 'critica' && t.status !== 'concluido' && t.prazo && t.prazo < today()).length;
     sentence = `Você tem <b class="g-yellow">${ps.andamento}</b> em andamento e <b class="g-orange">${ps.aVencer}</b> a vencer. `
       + `<b class="g-fc">${aprov}</b> ${aprov === 1 ? 'aprovação aguarda' : 'aprovações aguardam'} você e sua equipe tem `
       + `<b class="g-red">${teamCrit}</b> crítica${teamCrit === 1 ? '' : 's'} atrasada${teamCrit === 1 ? '' : 's'}.`;
@@ -1996,8 +2028,6 @@ function renderPainel() {
     </div>`;
 }
 
-fillSelect("iSetor", SETORES, false);
-fillSelect("iSolicitante", SOLICITANTES, false);
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
 
 applyTheme(localStorage.getItem("theme") || "light");
@@ -2008,7 +2038,6 @@ applyTheme(localStorage.getItem("theme") || "light");
   tasks.forEach(t => {
     if (!t.code) { t.code = nextCode(); changed = true; }
     if (t.progresso === undefined) { t.progresso = t.status === "concluido" ? 100 : 0; changed = true; }
-    if (!t.relevancia) { t.relevancia = 'normal'; changed = true; }
     if (!t.aprovacao) { t.aprovacao = 'none'; changed = true; }
   });
   if (changed) persist();
@@ -2041,9 +2070,60 @@ function showUser(user) {
   document.getElementById("userPerfil").textContent = currentUser ? (PERFIL_LABEL[currentUser.perfil] || "") : "";
   document.getElementById("userAvatar").textContent = initials(nome || "?");
   document.getElementById("userChip").style.display = email ? "inline-flex" : "none";
-  document.getElementById("logoutBtn").style.display = email ? "inline-flex" : "none";
+  document.getElementById("gearBtn").style.display = email ? "inline-flex" : "none";
   document.getElementById("bellWrap").style.display = email ? "block" : "none";
   updateRoleUI();
+}
+
+function openSettings() {
+  const msg = document.getElementById("setMsg"); msg.className = "login-msg"; msg.textContent = "";
+  document.getElementById("setPass1").value = ""; document.getElementById("setPass2").value = "";
+  document.getElementById("settingsUserInfo").textContent = currentUser
+    ? `${currentUser.nome || ""} · ${PERFIL_LABEL[currentUser.perfil] || ""}${currentUser.setor ? " · " + currentUser.setor : ""}` : "";
+  document.getElementById("settingsOverlay").classList.add("open");
+}
+function closeSettings() { document.getElementById("settingsOverlay").classList.remove("open"); }
+async function salvarNovaSenha() {
+  const msg = document.getElementById("setMsg");
+  const p1 = document.getElementById("setPass1").value, p2 = document.getElementById("setPass2").value;
+  msg.className = "login-msg";
+  if (p1.length < 6) { msg.className = "login-msg err"; msg.textContent = "A senha deve ter no mínimo 6 caracteres."; return; }
+  if (p1 !== p2) { msg.className = "login-msg err"; msg.textContent = "As senhas não coincidem."; return; }
+  if (!sb) { msg.className = "login-msg err"; msg.textContent = "Sem conexão."; return; }
+  const btn = document.getElementById("setPassBtn"); btn.disabled = true; btn.textContent = "Salvando...";
+  try {
+    const { error } = await sb.auth.updateUser({ password: p1 });
+    if (error) throw error;
+    try { await sb.rpc("marcar_senha_alterada"); } catch (e) {}
+    msg.className = "login-msg ok"; msg.textContent = "✓ Senha alterada com sucesso.";
+    document.getElementById("setPass1").value = ""; document.getElementById("setPass2").value = "";
+  } catch (e) { msg.className = "login-msg err"; msg.textContent = "Falha: " + (e.message || e); }
+  btn.disabled = false; btn.textContent = "Salvar nova senha";
+}
+async function trocarSenhaPrimeiroAcesso() {
+  const msg = document.getElementById("pwMsg");
+  const p1 = document.getElementById("pw1").value, p2 = document.getElementById("pw2").value;
+  msg.className = "login-msg";
+  if (p1.length < 6) { msg.className = "login-msg err"; msg.textContent = "A senha deve ter no mínimo 6 caracteres."; return; }
+  if (p1 !== p2) { msg.className = "login-msg err"; msg.textContent = "As senhas não coincidem."; return; }
+  if (!sb) { msg.className = "login-msg err"; msg.textContent = "Sem conexão."; return; }
+  const btn = document.getElementById("pwBtn"); btn.disabled = true; btn.textContent = "Salvando...";
+  try {
+    const { error } = await sb.auth.updateUser({ password: p1 });
+    if (error) throw error;
+    try { await sb.rpc("marcar_senha_alterada"); } catch (e) {}
+    if (PROFILES_BY_ID[currentUser.id]) PROFILES_BY_ID[currentUser.id].must_change_password = false;
+    document.getElementById("pwOverlay").classList.remove("open");
+    showToast("Senha definida ✅", "Bem-vindo(a)!");
+  } catch (e) { msg.className = "login-msg err"; msg.textContent = "Falha: " + (e.message || e); btn.disabled = false; btn.textContent = "Salvar e continuar"; }
+}
+function checarTrocaSenha() {
+  const p = currentUser && PROFILES_BY_ID[currentUser.id];
+  if (p && p.must_change_password) {
+    document.getElementById("pwMsg").textContent = "";
+    document.getElementById("pw1").value = ""; document.getElementById("pw2").value = "";
+    document.getElementById("pwOverlay").classList.add("open");
+  }
 }
 
 function updateRoleUI() {
@@ -2055,7 +2135,7 @@ function updateRoleUI() {
 async function loadProfiles() {
   if (!sb) return;
   try {
-    const { data, error } = await sb.from("profiles").select("id,matricula,nome,perfil,gestor_matricula,email");
+    const { data, error } = await sb.from("profiles").select("id,matricula,nome,perfil,gestor_matricula,email,setor,must_change_password");
     if (error) throw error;
     PROFILES_BY_ID = {};
     (data || []).forEach(p => { PROFILES_BY_ID[p.id] = p; });
@@ -2078,14 +2158,14 @@ function fmtNotifTime(iso) {
   return `${p(d.getDate())}/${p(d.getMonth() + 1)} · ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 function renderBell() {
-  const unread = notifs.filter(n => !n.lida).length;
+  const naoLidas = notifs.filter(n => !n.lida);
   const badge = document.getElementById("bellBadge");
-  badge.style.display = unread ? "flex" : "none";
-  badge.textContent = unread > 9 ? "9+" : unread;
+  badge.style.display = naoLidas.length ? "flex" : "none";
+  badge.textContent = naoLidas.length > 9 ? "9+" : naoLidas.length;
   const list = document.getElementById("bellList");
-  if (!notifs.length) { list.innerHTML = `<div class="bell-empty">Nenhuma notificação ainda.</div>`; return; }
+  if (!naoLidas.length) { list.innerHTML = `<div class="bell-empty">Nenhuma notificação nova.</div>`; return; }
   const ico = { enviada: "📤", aprovacao_solicitada: "🔔", aprovada: "✅", reprovada: "⛔", info: "ℹ️", solicitacao_recebida: "📨", solicitacao_aceita: "✅", solicitacao_recusada: "⛔" };
-  list.innerHTML = notifs.map(n => `<div class="notif ${n.lida ? "" : "unread"} n-${n.tipo}">
+  list.innerHTML = naoLidas.map(n => `<div class="notif unread n-${n.tipo}">
     <div class="n-ico">${ico[n.tipo] || "•"}</div>
     <div class="n-body"><div class="n-msg">${esc(n.mensagem)}</div><div class="n-time">${fmtNotifTime(n.created_at)}</div></div>
   </div>`).join("");
@@ -2122,7 +2202,7 @@ function renderApprovals() {
     return `<div class="appr-card">
       <div class="ac-top">
         <h4>${t.code ? t.code + " · " : ""}${esc(t.titulo)}</h4>
-        <span class="tag rel-${t.relevancia || "normal"}">${t.relevancia === "critica" ? "⚡ " : ""}${RELEVANCIA_LABEL[t.relevancia || "normal"]}</span>
+        ${t.prioridade === "critica" ? '<span class="tag pri-critica">⚡ Prioridade</span>' : ''}
       </div>
       <div class="ac-meta">
         <span>Solicitante: <b>${esc(owner)}</b></span>
@@ -2194,9 +2274,9 @@ function renderSolicitacoes() {
   const recebidas = solicPendentesRecebidas();
   if (cnt) cnt.textContent = recebidas.length ? `(${recebidas.length})` : "";
   rec.innerHTML = recebidas.length ? recebidas.map(s => {
-    const rel = s.relevancia || "normal";
+    const pr = s.prioridade || "media";
     return `<div class="appr-card">
-      <div class="ac-top"><h4>${esc(s.titulo)}</h4><span class="tag rel-${rel}">${rel === "critica" ? "⚡ " : ""}${RELEVANCIA_LABEL[rel]}</span></div>
+      <div class="ac-top"><h4>${esc(s.titulo)}${s.confidencial ? ' 🔒' : ''}</h4>${pr === "critica" ? '<span class="tag pri-critica">⚡ Prioridade</span>' : ''}</div>
       <div class="ac-meta"><span>De: <b>${esc(nomeDe(s.de_user_id))}</b></span>${s.setor ? `<span>Setor: <b>${esc(s.setor)}</b></span>` : ""}${s.prazo ? `<span>Prazo sugerido: <b>${fmtDate(s.prazo)}</b></span>` : ""}</div>
       ${s.descricao ? `<div style="font-size:.8rem;color:var(--text-dim);margin-bottom:14px">${esc(s.descricao)}</div>` : ""}
       <div class="ac-actions"><button class="btn-approve" onclick="responderSolicitacao(${s.id}, true)">✓ Aceitar</button><button class="btn-reject" onclick="responderSolicitacao(${s.id}, false)">✗ Recusar</button></div>
@@ -2220,10 +2300,17 @@ async function bootApp(user) {
     appBooted = true;
     updateSyncChip();
     await loadProfiles();    // diretório de nomes antes de renderizar
+    checarTrocaSenha();      // força troca de senha no 1º acesso
     render();
     await loadFromSupabase();
     await loadNotificacoes();
     await loadSolicitacoes();
+    // veio do menu em "Configurações"
+    if (location.hash === '#config') {
+      setTimeout(function () {
+        if (!document.getElementById('pwOverlay').classList.contains('open')) openSettings();
+      }, 350);
+    }
   }
 }
 
@@ -2257,6 +2344,7 @@ async function doLogin(e) {
 
 async function doLogout() {
   if (!confirm("Sair da sua conta?")) return;
+  closeSettings();
   if (sb) await sb.auth.signOut();
   lockApp();
 }
