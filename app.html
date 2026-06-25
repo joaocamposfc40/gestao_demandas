@@ -41,6 +41,11 @@
     --red-bright: #ff6168;
     --gray-1: #8b92a5;
     --gray-2: #5b6275;
+    /* Identidade de status: pendente(escuro)/espera(claro)/atrasado(vermelho)/concluído(verde) */
+    --st-pend: #666666;            --st-pend-soft: rgba(102,102,102,.20);
+    --st-wait: #9e9e9e;            --st-wait-soft: rgba(158,158,158,.18);
+    --st-late: #C51230;            --st-late-soft: rgba(197,18,48,.16);
+    --st-done: #7C9063;            --st-done-soft: rgba(124,144,99,.20);
     --radius: 10px;
     --shadow-sm: 0 2px 8px rgba(0,0,0,.25);
     --shadow-md: 0 6px 24px rgba(0,0,0,.35);
@@ -241,12 +246,14 @@
     background: var(--surface-2); border-radius: 99px; padding: 2px 10px;
     font-size: .7rem; color: var(--text-dim); font-weight: 600;
   }
-  .col[data-status="concluido"] .col-dot { background: var(--green); }
-  .col[data-status="concluido"] .col-head h2 { color: var(--green-bright); }
-  .col[data-status="andamento"] .col-dot { background: var(--blue); }
-  .col[data-status="andamento"] .col-head h2 { color: var(--blue); }
-  .col[data-status="aguardando"] .col-dot { background: var(--yellow); }
-  .col[data-status="aguardando"] .col-head h2 { color: var(--yellow); }
+  .col[data-status="concluido"] .col-dot { background: var(--st-done); }
+  .col[data-status="concluido"] .col-head h2 { color: var(--st-done); }
+  .col[data-status="andamento"] .col-dot { background: var(--st-pend); }
+  .col[data-status="andamento"] .col-head h2 { color: var(--st-pend); }
+  .col[data-status="backlog"] .col-dot { background: var(--st-wait); }
+  .col[data-status="backlog"] .col-head h2 { color: var(--st-wait); }
+  .col[data-status="aguardando"] .col-dot { background: var(--st-wait); }
+  .col[data-status="aguardando"] .col-head h2 { color: var(--st-wait); }
 
   @keyframes pulse-border {
     0%, 100% { box-shadow: 0 0 0 1px rgba(189,35,53,.4), var(--shadow-sm); }
@@ -304,20 +311,22 @@
   .tag.pri-baixa { background: var(--surface-3); color: var(--text-dim); }
   .tag.conf-tag { background: rgba(138,127,176,.18); color: #9a8fc0; }
   body.light .tag.conf-tag { color: #5b5280; }
-  .tag.st-backlog { background: var(--surface-3); color: var(--text-dim); }
-  .tag.st-andamento { background: var(--blue-soft); color: var(--blue); }
-  .tag.st-aguardando { background: var(--yellow-soft); color: var(--yellow); }
-  .tag.st-concluido { background: var(--green-soft); color: var(--green-bright); }
+  .tag.st-backlog { background: var(--st-wait-soft); color: var(--st-wait); }
+  .tag.st-andamento { background: var(--st-pend-soft); color: var(--st-pend); }
+  .tag.st-aguardando { background: var(--st-wait-soft); color: var(--st-wait); }
+  .tag.st-concluido { background: var(--st-done-soft); color: var(--st-done); }
   .tag.rel-normal { background: var(--surface-3); color: var(--text-dim); }
   .tag.rel-alta { background: var(--yellow-soft); color: var(--yellow); }
   .tag.rel-critica { background: var(--red-soft); color: var(--red-bright); font-weight: 800; }
-  body.light .tag.pri-media, body.light .tag.st-aguardando, body.light .tag.rel-alta { color: #7a6520; }
+  body.light .tag.pri-media, body.light .tag.rel-alta { color: #7a6520; }
+  body.light .tag.st-backlog, body.light .tag.st-aguardando { color: #5c5c5c; }
+  body.light .tag.st-andamento { color: #4d4d4d; }
   body.light .tag.pri-alta { color: #8a4a14; }
-  body.light .tag.st-concluido { color: #4a5e32; }
+  body.light .tag.st-concluido { color: #4d5e3a; }
   body.light .tag.rel-critica, body.light .tag.pri-critica { color: #8a1525; }
   .task h4 { font-size: .88rem; font-weight: 600; line-height: 1.4; margin-bottom: 10px; color: var(--text); }
   .task .t-meta { display: flex; justify-content: space-between; align-items: center; font-size: .71rem; color: var(--text-dim); margin-top: 8px; }
-  .task .t-meta .due.late { color: var(--red-bright); font-weight: 700; }
+  .task .t-meta .due.late { color: var(--st-late); font-weight: 700; }
   .task .solicitante { display: flex; align-items: center; gap: 6px; }
   .avatar {
     width: 24px; height: 24px; border-radius: 50%;
@@ -550,10 +559,11 @@
     font-size: .64rem; font-weight: 700; padding: 4px 9px; border-radius: 7px;
     margin-bottom: 8px; width: fit-content;
   }
-  .appr-badge.pendente  { background: var(--yellow-soft); color: var(--yellow); }
-  .appr-badge.aprovada  { background: var(--green-soft); color: var(--green-bright); }
-  .appr-badge.reprovada { background: var(--red-soft); color: var(--red-bright); }
-  body.light .appr-badge.pendente { color: #7a6520; }
+  .appr-badge.pendente  { background: var(--st-wait-soft); color: var(--st-wait); }
+  .appr-badge.aprovada  { background: var(--st-done-soft); color: var(--st-done); }
+  .appr-badge.reprovada { background: var(--st-late-soft); color: var(--st-late); }
+  body.light .appr-badge.pendente { color: #5c5c5c; }
+  body.light .appr-badge.aprovada { color: #4d5e3a; }
   .task.aguardando-aprov { opacity: .82; border-style: dashed; }
   .t-owner { font-size: .64rem; color: var(--text-mute); margin-top: 6px; display: flex; align-items: center; gap: 5px; }
   .t-owner .avatar { width: 18px; height: 18px; font-size: .54rem; }
@@ -652,6 +662,11 @@
   .m3d .num { font-size: 2.4rem; font-weight: 800; line-height: 1; letter-spacing: -1.5px; }
   .m3d .lbl { font-size: .76rem; color: var(--text-dim); margin-top: 7px; font-weight: 500; }
   .m3d .hint { font-size: .65rem; color: var(--text-mute); margin-top: 2px; }
+  .m-cards-3 { grid-template-columns: repeat(3, 1fr); align-items: start; }
+  @media (max-width: 820px) { .m-cards-3 { grid-template-columns: 1fr; } }
+  .pend-break { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 10px; display: flex; flex-direction: column; gap: 7px; }
+  .pend-break > div { display: flex; justify-content: space-between; align-items: baseline; font-size: .74rem; color: var(--text-dim); }
+  .pend-break > div b { color: var(--text); font-weight: 700; font-size: .82rem; }
 
   .newbar { display: flex; justify-content: flex-end; margin-top: 16px; }
   .p-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
@@ -675,8 +690,22 @@
   .st-row:last-child { margin-bottom: 0; }
   .st-name { width: 120px; font-size: .75rem; color: var(--text-dim); flex-shrink: 0; text-align: right;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .st-track { flex: 1; height: 9px; background: var(--surface-3); border-radius: 99px; overflow: hidden; }
-  .st-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, rgba(200,32,58,.5), var(--accent-bright)); }
+  .st-track { flex: 1; height: 9px; background: rgba(128,128,128,.2); border-radius: 99px; overflow: hidden; }
+  .st-fill { height: 100%; border-radius: 99px; background: var(--accent); }
+
+  /* KPI de vazão (concluídas 7 dias) + sparkline */
+  .kpi-vazao { display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    margin-top: 18px; padding: 14px 20px; border-radius: 14px; border: 1px solid var(--border);
+    background: rgba(128,128,128,.06); }
+  .kpi-vazao .kv-num { font-size: 1.9rem; font-weight: 800; letter-spacing: -1px; line-height: 1; color: var(--text); }
+  .kpi-vazao .kv-lbl { font-size: .74rem; color: var(--text-dim); margin-top: 3px; }
+  .kpi-vazao .kv-spark { flex-shrink: 0; opacity: .9; }
+
+  /* Foco de hoje — metadados e tag de motivo */
+  .li .lt { display: flex; align-items: center; gap: 7px; }
+  .foco-motivo { font-size: .6rem; text-transform: uppercase; letter-spacing: .4px; font-weight: 700;
+    color: var(--accent); background: rgba(200,32,58,.1); border: 1px solid rgba(200,32,58,.25);
+    padding: 1px 6px; border-radius: 99px; cursor: help; white-space: nowrap; }
   .st-val { width: 22px; font-size: .82rem; font-weight: 700; text-align: right; }
 
   .scope-seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--border);
@@ -715,11 +744,10 @@
   .subt-add input { flex: 1; }
 
   /* status "pausado" */
-  .tag.st-pausado { background: rgba(138,127,176,.16); color: #b3a8d6; }
-  body.light .tag.st-pausado { color: #5b5280; }
-  .col[data-status="pausado"] .col-dot { background: #8a7fb0; }
-  .col[data-status="pausado"] .col-head h2 { color: #b3a8d6; }
-  body.light .col[data-status="pausado"] .col-head h2 { color: #5b5280; }
+  .tag.st-pausado { background: var(--st-pend-soft); color: var(--st-pend); }
+  body.light .tag.st-pausado { color: #4d4d4d; }
+  .col[data-status="pausado"] .col-dot { background: var(--st-pend); }
+  .col[data-status="pausado"] .col-head h2 { color: var(--st-pend); }
 
   /* hero "Pendentes" no Painel */
   .pend-hero { display: flex; align-items: center; gap: 16px; margin-top: 20px; padding: 16px 22px;
@@ -858,10 +886,9 @@
         </div>
         <div class="cal-kanban" id="calKanban"></div>
         <div class="cal-legend">
-          <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--red-bright)"></div>Atrasada</div>
-          <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--orange)"></div>Crítica</div>
-          <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--lblue)"></div>A vencer</div>
-          <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--green)"></div>Concluída</div>
+          <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--st-late)"></div>Atrasada</div>
+          <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--st-pend)"></div>Pendente</div>
+          <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--st-done)"></div>Concluída</div>
         </div>
       </div>
     </div>
@@ -1492,10 +1519,9 @@ function renderCalendar() {
     const items = (byMonth[idx] || []).sort((a, b) => a.d - b.d);
     const cards = items.length ? items.map(({ t, d }) => {
       const late = t.status !== "concluido" && t.prazo < today();
-      const color = t.status === "concluido" ? "var(--green)"
-        : late ? "var(--red-bright)"
-        : t.prioridade === "critica" ? "var(--orange)"
-        : "var(--lblue)";
+      const color = t.status === "concluido" ? "var(--st-done)"
+        : late ? "var(--st-late)"
+        : "var(--st-pend)";
       return `<div class="cal-mcard" style="border-left-color:${color}" onclick="openModal('${t.id}')">
         <div class="cmc-day">${d}</div>
         <div><div class="cmc-t">${esc(t.titulo)}</div><div class="cmc-m">${t.code ? t.code + " · " : ""}${STATUS_LABEL[t.status]}</div></div>
@@ -1550,7 +1576,7 @@ function renderTable() {
       <td style="font-size:.74rem;color:var(--text-dim)">${esc(t.setor)}</td>
       <td><span class="solicitante"><span class="avatar">${initials(t.solicitante || '?')}</span> ${esc(t.solicitante || '—')}</span></td>
       <td>${crit ? '<span class="tag pri-critica">⚡ Prioridade</span>' : '—'}</td>
-      <td style="white-space:nowrap;font-weight:600;color:${late ? 'var(--red)' : 'var(--text-dim)'}">${t.prazo ? fmtDate(t.prazo) : "—"}</td>
+      <td style="white-space:nowrap;font-weight:600;color:${late ? 'var(--st-late)' : 'var(--text-dim)'}">${t.prazo ? fmtDate(t.prazo) : "—"}</td>
       <td><span class="tag st-${t.status}">${STATUS_LABEL[t.status]}</span></td>
     </tr>`;
   }).join("") || `<tr style="cursor:default"><td colspan="7" style="text-align:center;color:var(--text-dim);padding:26px">Nenhuma demanda nesse filtro</td></tr>`;
@@ -1579,7 +1605,7 @@ function renderBoard() {
       const subs = SUBT_BY_DEMANDA[String(t.id)] || [];
       const subDone = subs.filter(s => s.concluida).length;
       const prog = demandaPct(t);
-      const pColor = t.status === "concluido" ? "var(--green)" : prog >= 60 ? "var(--blue)" : "var(--yellow)";
+      const pColor = t.status === "concluido" ? "var(--st-done)" : late ? "var(--st-late)" : "var(--st-pend)";
       const critica = t.prioridade === 'critica';
       const isPendApr = t.aprovacao === 'pendente';
       const isOnFire = critica && t.status !== 'concluido' && !isPendApr;  // toda prioritária pega fogo
@@ -1954,11 +1980,18 @@ async function saveTask(e) {
           p_subtarefas: novaSubt.length ? novaSubt : null,
         });
         if (error) throw error;
-        logAction({ titulo: document.getElementById("iTitulo").value.trim(), setor: alvo.setor || null, userId: para },
-                   "Solicitação enviada", currentUser && currentUser.nome, nomeDe(para));
-        showToast("Solicitação enviada 📨", nomeDe(para) + " foi notificado(a).");
+        if (querAprov) {
+          logAction({ titulo: document.getElementById("iTitulo").value.trim(), setor: alvo.setor || null, userId: para },
+                     "Aprovação solicitada", currentUser && currentUser.nome, nomeDe(aprovadorSolic));
+          showToast("Enviada para aprovação 🔔", nomeDe(aprovadorSolic) + " vai decidir; " + nomeDe(para) + " já vê como aguardando.");
+        } else {
+          logAction({ titulo: document.getElementById("iTitulo").value.trim(), setor: alvo.setor || null, userId: para },
+                     "Solicitação enviada", currentUser && currentUser.nome, nomeDe(para));
+          showToast("Solicitação enviada 📨", nomeDe(para) + " foi notificado(a).");
+        }
         closeModal();
         await loadSolicitacoes();
+        await loadFromSupabase();
       } catch (err) {
         alert("Falha ao solicitar: " + (err.message || err));
         btn.disabled = false; btn.textContent = "Enviar solicitação";
@@ -2153,11 +2186,15 @@ function within7(t) {
 }
 function myTasks() { const id = currentUser && currentUser.id; return tasks.filter(t => String(t.userId) === String(id)); }
 function painelStats(list) {
+  const aberta = t => t.status !== 'concluido' && !aguardandoAprov(t);
   return {
     andamento: list.filter(t => t.status === 'andamento' && !aguardandoAprov(t)).length,
     aVencer: list.filter(within7).length,
-    atrasada: list.filter(t => t.status !== 'concluido' && !aguardandoAprov(t) && t.prazo && t.prazo < today()).length,
+    atrasada: list.filter(t => aberta(t) && t.prazo && t.prazo < today()).length,
     aguardando: list.filter(aguardandoAprov).length,
+    pendentes: list.filter(aberta).length,                                   // todas não concluídas, fora aprovação
+    futuros: list.filter(t => aberta(t) && t.prazo && t.prazo >= today() && !within7(t)).length,
+    semPrazo: list.filter(t => aberta(t) && !t.prazo).length,
   };
 }
 function onFireSet() {
@@ -2203,16 +2240,34 @@ function pCard(stroke, numColor, val, lbl, hint, paths) {
   return `<div class="m3d"><span class="ico"><svg viewBox="0 0 24 24" stroke="${stroke}">${paths}</svg></span>
     <div class="num" style="color:${numColor}">${val}</div><div class="lbl">${lbl}</div><div class="hint">${hint}</div></div>`;
 }
+function motivoFoco(t) {
+  // motivo discreto quando a priorização NÃO vem do prazo (prioridade crítica sem prazo)
+  if (t.prioridade === 'critica' && !t.prazo) {
+    return {
+      tag: t.setorDemandante ? `Origem: ${t.setorDemandante}` : 'Prioridade',
+      tip: 'Priorizada por prioridade crítica, sem prazo definido.',
+    };
+  }
+  return null;
+}
 function focoItemHtml(t, fire) {
   const late = t.prazo && t.prazo < today() && t.status !== 'concluido';
   const crit = t.prioridade === 'critica';
-  const barColor = late ? 'var(--red-bright)' : (crit ? 'var(--orange)' : (within7(t) ? 'var(--lblue)' : 'var(--text-mute)'));
-  const chip = crit ? `<span class="tag pri-critica">⚡ Prioridade</span>` : '';
+  const barColor = late ? 'var(--st-late)' : (t.status === 'concluido' ? 'var(--st-done)' : 'var(--st-pend)');
   const when = aguardandoAprov(t) ? 'aguardando aprovação' : (late ? 'atrasada' : (t.prazo ? 'vence ' + fmtDate(t.prazo) : 'sem prazo'));
   const flame = (fire.has(String(t.id))) ? '🔥 ' : '';
+  const motivo = motivoFoco(t);
+  const motivoTag = motivo
+    ? `<span class="foco-motivo" title="${esc(motivo.tip)}">${esc(motivo.tag)}</span>`
+    : (crit ? `<span class="foco-motivo" title="Prioridade crítica.">⚡ Prioridade</span>` : '');
+  // título = escopo (destaque); ID · solicitante · status = metadados secundários
+  const meta = [t.code, t.solicitante ? esc(t.solicitante) : null, when].filter(Boolean).join(' · ');
   return `<div class="li" style="cursor:pointer" onclick="openModal('${t.id}')">
     <div class="lbar" style="background:${barColor}"></div>
-    <div class="lbody"><div class="lt">${flame}${esc(t.titulo)}</div><div class="lm">${t.code ? t.code + ' · ' : ''}${when}</div></div>${chip}</div>`;
+    <div class="lbody">
+      <div class="lt">${flame}${esc(t.titulo)}${motivoTag}</div>
+      <div class="lm">${meta}</div>
+    </div></div>`;
 }
 function cobrarDesc(r) {
   const parts = [];
@@ -2228,6 +2283,49 @@ function cobrarChip(r) {
   if (r.pend) return `<span class="tag rel-alta">aprovar</span>`;
   return '';
 }
+/* Manchete de Insight: prioriza ALERTA (atraso) → PRAZO próximo → PROGRESSO */
+function manchete(ps, manager) {
+  if (manager) {
+    const aprov = pendingApprovals().length;
+    const teamCrit = tasks.filter(t => String(t.userId) !== String(currentUser.id) && t.prioridade === 'critica' && t.status !== 'concluido' && t.prazo && t.prazo < today()).length;
+    if (teamCrit)     return `⚠ Sua equipe tem <b class="g-red">${teamCrit}</b> crítica${teamCrit > 1 ? 's' : ''} atrasada${teamCrit > 1 ? 's' : ''} — priorize a cobrança.`;
+    if (ps.atrasada)  return `⚠ Você tem <b class="g-red">${ps.atrasada}</b> demanda${ps.atrasada > 1 ? 's' : ''} atrasada${ps.atrasada > 1 ? 's' : ''}.`;
+    if (aprov)        return `<b class="g-fc">${aprov}</b> aprovaç${aprov > 1 ? 'ões aguardam' : 'ão aguarda'} sua decisão.`;
+    if (ps.aVencer)   return `<b class="g-orange">${ps.aVencer}</b> demanda${ps.aVencer > 1 ? 's' : ''} vence${ps.aVencer > 1 ? 'm' : ''} nos próximos 7 dias.`;
+    if (ps.andamento) return `<b class="g-yellow">${ps.andamento}</b> em andamento — equipe em ritmo.`;
+    return `Tudo em dia por aqui. 👏`;
+  }
+  if (ps.atrasada)  return `⚠ Você tem <b class="g-red">${ps.atrasada}</b> demanda${ps.atrasada > 1 ? 's' : ''} atrasada${ps.atrasada > 1 ? 's' : ''} — comece por elas.`;
+  if (ps.aVencer)   return `<b class="g-orange">${ps.aVencer}</b> demanda${ps.aVencer > 1 ? 's' : ''} vence${ps.aVencer > 1 ? 'm' : ''} nos próximos 7 dias.`;
+  if (ps.aguardando)return `<b class="g-lblue">${ps.aguardando}</b> ${ps.aguardando > 1 ? 'demandas aguardam' : 'demanda aguarda'} aprovação do gestor.`;
+  if (ps.andamento) return `<b class="g-yellow">${ps.andamento}</b> em andamento — bom ritmo!`;
+  return `Nenhuma pendência no momento. 👏`;
+}
+/* Concluídas nos últimos 7 dias (por dia), p/ KPI + sparkline */
+function concluidas7(list) {
+  const days = [];
+  const base = new Date(today());
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(base); d.setDate(d.getDate() - i);
+    days.push({ key: d.toISOString().slice(0, 10), n: 0 });
+  }
+  const idx = {}; days.forEach((d, i) => { idx[d.key] = i; });
+  list.forEach(t => {
+    if (t.status === 'concluido' && t.concluidaEm && idx[t.concluidaEm] !== undefined) days[idx[t.concluidaEm]].n++;
+  });
+  return days;
+}
+function sparkline(vals, w = 88, h = 28) {
+  const max = Math.max(1, ...vals), n = vals.length;
+  const step = n > 1 ? w / (n - 1) : w;
+  const pts = vals.map((v, i) => `${(i * step).toFixed(1)},${(h - (v / max) * (h - 6) - 3).toFixed(1)}`).join(' ');
+  const last = vals.length ? vals[vals.length - 1] : 0;
+  const lx = ((n - 1) * step).toFixed(1), ly = (h - (last / max) * (h - 6) - 3).toFixed(1);
+  return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" preserveAspectRatio="none" aria-hidden="true">
+    <polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${lx}" cy="${ly}" r="2.6" fill="var(--accent)"/>
+  </svg>`;
+}
 function renderPainel() {
   const el = document.getElementById('painelView');
   if (!el || !currentUser) return;
@@ -2235,22 +2333,11 @@ function renderPainel() {
   const solicView = taskScope === 'solicitadas';
   const mine = scopeApply(tasks);  // 'minhas' → próprias; 'equipe' → setor; 'solicitadas' → as que eu pedi
   const ps = painelStats(mine);
-  const pendentes = mine.filter(t => t.status !== 'concluido').length;
   const manager = isManagerView();
   const nome = firstName(currentUser.nome || currentUser.email);
   const fire = onFireSet();
 
-  let sentence;
-  if (manager) {
-    const aprov = pendingApprovals().length;
-    const teamCrit = tasks.filter(t => String(t.userId) !== String(currentUser.id) && t.prioridade === 'critica' && t.status !== 'concluido' && t.prazo && t.prazo < today()).length;
-    sentence = `Você tem <b class="g-yellow">${ps.andamento}</b> em andamento e <b class="g-orange">${ps.aVencer}</b> a vencer. `
-      + `<b class="g-fc">${aprov}</b> ${aprov === 1 ? 'aprovação aguarda' : 'aprovações aguardam'} você e sua equipe tem `
-      + `<b class="g-red">${teamCrit}</b> crítica${teamCrit === 1 ? '' : 's'} atrasada${teamCrit === 1 ? '' : 's'}.`;
-  } else {
-    sentence = `Você tem <b class="g-yellow">${ps.andamento}</b> em andamento, <b class="g-red">${ps.atrasada}</b> atrasada${ps.atrasada === 1 ? '' : 's'}, `
-      + `<b class="g-orange">${ps.aVencer}</b> a vencer e <b class="g-lblue">${ps.aguardando}</b> ${ps.aguardando === 1 ? 'aprovação pendente' : 'aprovações pendentes'}.`;
-  }
+  const sentence = manchete(ps, manager);
 
   const cmdHtml = manager
     ? `<div class="cmd"><div class="big">${pendingApprovals().length}</div>
@@ -2259,11 +2346,20 @@ function renderPainel() {
         <button class="btn" onclick="switchTab('aprovacoes', document.getElementById('tabBtnAprovacoes'))">Revisar</button></div>`
     : '';
 
-  const cards = `<div class="m-cards">
-    ${pCard('#e0b83a', 'var(--yellow)', ps.andamento, 'Em andamento', 'ativas agora', '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>')}
-    ${pCard('#e07d2f', 'var(--orange)', ps.aVencer, 'A vencer', 'próximos 7 dias', '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>')}
-    ${pCard('#e5484d', 'var(--red-bright)', ps.atrasada, 'Atrasada' + (ps.atrasada === 1 ? '' : 's'), 'requer atenção', '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>')}
-    ${pCard('#5fb0e8', 'var(--lblue)', ps.aguardando, 'Aguardando aprovação', 'na fila do gestor', '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>')}
+  const pendCard = `<div class="m3d">
+      <span class="ico"><svg viewBox="0 0 24 24" stroke="#666666" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+      <div class="num" style="color:var(--st-pend)">${ps.pendentes}</div>
+      <div class="lbl">Pendentes</div>
+      <div class="pend-break">
+        <div><span>A vencer (7 dias)</span><b>${ps.aVencer}</b></div>
+        <div><span>Futuros</span><b>${ps.futuros}</b></div>
+        ${ps.semPrazo ? `<div><span>Sem prazo</span><b>${ps.semPrazo}</b></div>` : ''}
+      </div>
+    </div>`;
+  const cards = `<div class="m-cards m-cards-3">
+    ${pendCard}
+    ${pCard('#C51230', 'var(--st-late)', ps.atrasada, 'Atrasada' + (ps.atrasada === 1 ? '' : 's'), 'requer atenção', '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>')}
+    ${pCard('#9e9e9e', 'var(--st-wait)', ps.aguardando, 'Aguardando aprovação', 'na fila do gestor', '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>')}
   </div>`;
 
   const foco = focoList(mine);
@@ -2291,11 +2387,6 @@ function renderPainel() {
     ${canToggleScope() ? `<div style="display:flex;justify-content:flex-end;margin-bottom:6px">${scopeSeg()}</div>` : ''}
     <div class="greet"><h1>${greetingWord()}, ${esc(nome)}.</h1><p class="sentence">${sentence}</p></div>
     ${cmdHtml}
-    <div class="pend-hero">
-      <div class="ph-num">${pendentes}</div>
-      <div class="ph-txt"><div class="t">${pendentes === 1 ? 'demanda pendente' : 'demandas pendentes'}</div>
-        <div class="s">tudo que ainda não foi concluído</div></div>
-    </div>
     <span class="section-label">${solicView ? 'Demandas que você solicitou' : (setorView ? 'Demandas do setor' : 'Suas demandas')}</span>
     ${cards}
     <div class="newbar"><button class="btn" onclick="openModal()">+ Nova demanda</button></div>
