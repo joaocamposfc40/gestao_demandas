@@ -967,14 +967,6 @@
           </select>
         </div>
         <div class="full owner-only">
-          <label>Progresso</label>
-          <div class="prog-input-wrap">
-            <input type="range" id="iProgresso" min="0" max="100" step="5" value="0"
-                   oninput="document.getElementById('progVal').textContent = this.value + '%'">
-            <span class="prog-val" id="progVal">0%</span>
-          </div>
-        </div>
-        <div class="full owner-only">
           <label>Aprovação do gestor</label>
           <div class="appr-box" id="apprBox">
             <input type="checkbox" id="iAprovacao">
@@ -1002,7 +994,11 @@
   <div class="modal" style="max-width:440px">
     <h2>Configurações</h2>
     <div style="font-size:.82rem;color:var(--text-dim);margin-bottom:18px" id="settingsUserInfo">—</div>
-    <div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:4px">
+      <button class="btn" onclick="toggleResetSenha()">Resetar senha</button>
+      <button class="btn btn-danger" onclick="doLogout()">Sair da conta</button>
+    </div>
+    <div id="resetSenhaBlock" style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:16px">
       <label>Nova senha</label>
       <input type="password" id="setPass1" placeholder="Mínimo 6 caracteres">
       <label>Confirmar nova senha</label>
@@ -1011,7 +1007,6 @@
       <div class="login-msg" id="setMsg"></div>
     </div>
     <div style="border-top:1px solid var(--border);margin-top:18px;padding-top:16px;display:flex;gap:10px">
-      <button class="btn btn-danger" onclick="doLogout()">Sair da conta</button>
       <button class="btn btn-ghost" onclick="closeSettings()" style="margin-left:auto">Fechar</button>
     </div>
   </div>
@@ -1539,14 +1534,6 @@ function renderBoard() {
         ${apprBadge}
         <h4>${esc(t.titulo)}</h4>
         ${showOwner ? `<div class="t-owner"><span class="avatar">${initials(ownerNm)}</span>${esc(ownerNm)}</div>` : ''}
-        <div style="margin-bottom:8px">
-          <div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--text-dim);margin-bottom:3px">
-            <span>Progresso</span><span>${t.status === "concluido" ? 100 : prog}%</span>
-          </div>
-          <div style="height:5px;background:var(--surface-3);border-radius:99px;overflow:hidden">
-            <div style="width:${t.status === "concluido" ? 100 : prog}%;height:100%;background:${pColor};border-radius:99px"></div>
-          </div>
-        </div>
         <div class="t-meta">
           <span class="solicitante"><span class="avatar">${initials(t.solicitante)}</span>${esc(t.solicitante)}</span>
           ${t.prazo ? `<span class="due ${late ? "late" : ""}">${late ? "⚠ " : "📅 "}${fmtDate(t.prazo)}</span>` : ""}
@@ -2105,11 +2092,27 @@ function showUser(user) {
 function openSettings() {
   const msg = document.getElementById("setMsg"); msg.className = "login-msg"; msg.textContent = "";
   document.getElementById("setPass1").value = ""; document.getElementById("setPass2").value = "";
+  document.getElementById("resetSenhaBlock").style.display = "none";
   document.getElementById("settingsUserInfo").textContent = currentUser
     ? `${currentUser.nome || ""} · ${PERFIL_LABEL[currentUser.perfil] || ""}${currentUser.setor ? " · " + currentUser.setor : ""}` : "";
   document.getElementById("settingsOverlay").classList.add("open");
 }
-function closeSettings() { document.getElementById("settingsOverlay").classList.remove("open"); }
+function closeSettings() {
+  document.getElementById("settingsOverlay").classList.remove("open");
+  document.getElementById("resetSenhaBlock").style.display = "none";
+}
+function toggleResetSenha() {
+  const block = document.getElementById("resetSenhaBlock");
+  const visible = block.style.display !== "none";
+  block.style.display = visible ? "none" : "block";
+  if (!visible) {
+    document.getElementById("setPass1").focus();
+  } else {
+    document.getElementById("setPass1").value = "";
+    document.getElementById("setPass2").value = "";
+    const msg = document.getElementById("setMsg"); msg.className = "login-msg"; msg.textContent = "";
+  }
+}
 async function salvarNovaSenha() {
   const msg = document.getElementById("setMsg");
   const p1 = document.getElementById("setPass1").value, p2 = document.getElementById("setPass2").value;
