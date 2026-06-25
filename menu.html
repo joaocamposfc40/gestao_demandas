@@ -75,12 +75,12 @@
 
   .logo-sm {
     width: 58px; height: 58px; border-radius: 50%;
-    background: #C8203A;
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 4px 20px rgba(200,32,58,.35);
     margin-bottom: 18px;
     animation: logoDrop .55s cubic-bezier(.34,1.56,.64,1) .1s both;
   }
+  .logo-img { width: 100%; height: 100%; border-radius: 50%; display: block; object-fit: cover; }
   .m-title { animation: titleIn .5s ease .28s both; }
   .m-sub   { animation: titleIn .5s ease .36s both; }
   .m-divider { animation: titleIn .5s ease .44s both; }
@@ -194,14 +194,13 @@
   #veil.show { clip-path: circle(150% at 50% 52%); }
   #veil .veil-logo {
     position: absolute; left: 50%; top: 52%; transform: translate(-50%,-50%) scale(.6);
-    width: 64px; height: 64px; border-radius: 50%; background: #C8203A;
+    width: 64px; height: 64px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     opacity: 0; transition: opacity .35s ease .15s, transform .45s ease .15s;
     box-shadow: 0 6px 24px rgba(200,32,58,.4);
   }
   #veil.show .veil-logo { opacity: 1; transform: translate(-50%,-50%) scale(1); }
-  #veil .veil-logo b { color: #fff; font-weight: 900; font-size: 1.5rem; letter-spacing: -1px; }
-  #veil .veil-logo b small { font-size: 1.1rem; }
+  #veil .veil-logo img { width: 100%; height: 100%; border-radius: 50%; display: block; object-fit: cover; }
 </style>
 </head>
 <body>
@@ -221,9 +220,7 @@
 
   <div class="menu-content">
     <div class="logo-sm">
-      <div class="logo-letters">
-        <span class="logo-f">F</span><span class="logo-c">c</span>
-      </div>
+      <img src="logo-fc.png" alt="Ferreira Costa" class="logo-img">
     </div>
     <div class="m-title">Gestão de Demandas</div>
     <div class="m-sub">Auditoria de Dados</div>
@@ -264,7 +261,7 @@
   </div>
 </div>
 
-<div id="veil"><div class="veil-logo"><b>F<small>c</small></b></div></div>
+<div id="veil"><div class="veil-logo"><img src="logo-fc.png" alt="Ferreira Costa"></div></div>
 
 <script>
   const allItems = Array.from(document.querySelectorAll('.m-item'));
