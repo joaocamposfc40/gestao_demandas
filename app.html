@@ -1596,7 +1596,6 @@ function openModal(id) {
   document.getElementById("btnDelete").style.display = id ? "inline-block" : "none";
   const f = document.getElementById("taskForm");
   f.reset();
-  document.getElementById("progVal").textContent = "0%";
   const paraRow = document.getElementById("iParaRow");
   if (id) {
     paraRow.style.display = "none";
@@ -1612,8 +1611,6 @@ function openModal(id) {
     document.getElementById("iPrioridade").checked = (t.prioridade === 'critica');
     document.getElementById("iPrazo").value = t.prazo || "";
     document.getElementById("iStatus").value = t.status;
-    document.getElementById("iProgresso").value = t.progresso || 0;
-    document.getElementById("progVal").textContent = (t.progresso || 0) + "%";
     document.getElementById("iConfidencial").checked = !!t.confidencial;
     document.getElementById("iAutoSetor").textContent = t.setor || "—";
     document.getElementById("iAutoSetorDem").textContent = t.setorDemandante || "—";
@@ -1743,7 +1740,7 @@ async function saveTask(e) {
     prioridade: document.getElementById("iPrioridade").checked ? 'critica' : 'normal',
     prazo: document.getElementById("iPrazo").value,
     status: document.getElementById("iStatus").value,
-    progresso: parseInt(document.getElementById("iProgresso").value) || 0,
+    progresso: 0,
     confidencial: ehGestor && document.getElementById("iConfidencial").checked,
   };
   if (!editingId) {
