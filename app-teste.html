@@ -50,7 +50,7 @@
     --shadow-sm: 0 2px 8px rgba(0,0,0,.25);
     --shadow-md: 0 6px 24px rgba(0,0,0,.35);
     --shadow-lg: 0 16px 48px rgba(0,0,0,.5);
-    font-size: 15px;
+    font-size: 13.5px;
   }
   body.light {
     --bg: #eef0f4;
@@ -657,17 +657,17 @@
 
   .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px; }
   @media (max-width: 980px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
-  .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; box-shadow: var(--shadow-sm); }
+  .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 15px 16px; box-shadow: var(--shadow-sm); min-width: 0; }
   body:not(.light) .kpi-card { background: rgba(255,255,255,.025); }
-  .kpi-ico { width: 46px; height: 46px; border-radius: 13px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
-  .kpi-ico svg { width: 23px; height: 23px; }
+  .kpi-ico { width: 40px; height: 40px; border-radius: 11px; display: flex; align-items: center; justify-content: center; margin-bottom: 11px; }
+  .kpi-ico svg { width: 20px; height: 20px; }
   .kpi-ico.pend { background: var(--st-pend-soft); color: var(--st-pend); }
   .kpi-ico.late { background: var(--st-late-soft); color: var(--st-late); }
   .kpi-ico.wait { background: var(--st-wait-soft); color: var(--st-wait); }
   .kpi-ico.done { background: var(--st-done-soft); color: var(--st-done); }
-  .kpi-num { font-size: 2.1rem; font-weight: 800; line-height: 1; letter-spacing: -1px; }
-  .kpi-lbl { font-size: .9rem; color: var(--text-dim); margin-top: 6px; font-weight: 500; }
-  .kpi-hint { font-size: .72rem; margin-top: 4px; color: var(--text-mute); }
+  .kpi-num { font-size: 1.8rem; font-weight: 800; line-height: 1; letter-spacing: -1px; }
+  .kpi-lbl { font-size: .86rem; color: var(--text-dim); margin-top: 5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi-hint { font-size: .7rem; margin-top: 3px; color: var(--text-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .kpi-hint.late { color: var(--st-late); } .kpi-hint.done { color: var(--st-done); }
 
   .dash-row { display: grid; grid-template-columns: 1.5fr 1fr; gap: 18px; }
