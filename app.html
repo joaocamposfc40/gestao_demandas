@@ -1890,10 +1890,9 @@ function openModal(id) {
     document.getElementById("iAutoSetorDem").textContent = t.setorDemandante || setorDono || "—";
     document.getElementById("iAutoDemandante").textContent = t.solicitante || "—";
     setupApprovalBox(t);
-    // somente leitura: não sou dono e não sou gestor/master/dev → acompanhamento (ex.: demanda que solicitei)
-    const meId = currentUser && currentUser.id;
-    const readOnly = String(t.userId) !== String(meId) && !isManagerView();
-    applyReadOnly(readOnly);
+    // travas por campo: exec (dono/gestor) edita título/descrição/status/pasta;
+    // prazo/prioridade/confidencial só solicitante + gestor direto do executante
+    applyPermissoes(t);
   } else {
     applyReadOnly(false);
     paraRow.style.display = "block";
@@ -2057,6 +2056,41 @@ function podeGerirSubt(t) {
   if (solicitadasIds().has(String(t.id))) return true;  // criador (eu solicitei)
   return false;
 }
+/* sou o solicitante (quem pediu/criou) desta demanda? */
+function souSolicitante(t) {
+  if (!currentUser || !t) return false;
+  const me = String(currentUser.id);
+  if (solicitadasIds().has(String(t.id))) return true;                         // eu pedi a alguém
+  const pedidaParaMim = solicitacoes.some(s => String(s.demanda_id) === String(t.id)
+    && String(s.para_user_id) === me && String(s.de_user_id) !== me);
+  if (pedidaParaMim) return false;                                             // me pediram → sou executor, não solicitante
+  return String(t.userId) === me;                                             // criei a minha própria
+}
+/* prazo/prioridade/confidencialidade: só solicitante + gestor direto do executante (+ admin/master) */
+function podeEditarCampos3(t) {
+  if (!currentUser || !t) return false;
+  const p = currentUser.perfil;
+  if (p === 'desenvolvedor' || p === 'gestor_master') return true;             // acesso amplo
+  if (souSolicitante(t)) return true;                                          // solicitante
+  if (lideradosIds().has(String(t.userId))) return true;                       // gestor direto do executante
+  return false;
+}
+/* aplica travas por campo na EDIÇÃO (substitui o applyReadOnly antigo no modo editar) */
+function applyPermissoes(t) {
+  const me = String(currentUser && currentUser.id);
+  const admin = currentUser && (currentUser.perfil === 'desenvolvedor' || currentUser.perfil === 'gestor_master');
+  const exec = admin || isManagerView() || String(t.userId) === me;            // título, descrição, status, pasta
+  const campos3 = podeEditarCampos3(t);                                        // prazo, prioridade, confidencial
+  ['iTitulo', 'iDescricao', 'iStatus', 'iPasta'].forEach(id => { const el = document.getElementById(id); if (el) el.disabled = !exec; });
+  ['iPrazo', 'iPrioridade', 'iConfidencial'].forEach(id => { const el = document.getElementById(id); if (el) el.disabled = !campos3; });
+  const saveBtn = document.getElementById("saveBtn");
+  saveBtn.style.display = (exec || campos3) ? '' : 'none';
+  saveBtn.disabled = false; saveBtn.textContent = 'Salvar';
+  document.getElementById("btnDelete").style.display = exec ? 'inline-block' : 'none';
+  const ro = !exec && !campos3 && !podeGerirSubt(t);
+  const banner = document.getElementById("roBanner");
+  if (banner) banner.style.display = ro ? 'block' : 'none';
+}
 function renderSubtarefas(t) {
   const sec = document.getElementById("subtSection");
   if (!sec) return;
@@ -2218,6 +2252,13 @@ async function saveTask(e) {
   let task;
   if (editingId) {
     task = tasks.find(x => String(x.id) === String(editingId));
+    // respeita as travas por campo no salvar (espelha applyPermissoes)
+    const _me = String(currentUser && currentUser.id);
+    const _admin = currentUser && (currentUser.perfil === 'desenvolvedor' || currentUser.perfil === 'gestor_master');
+    const _exec = _admin || isManagerView() || String(task.userId) === _me;
+    const _campos3 = podeEditarCampos3(task);
+    if (!_campos3) { data.prazo = task.prazo; data.prioridade = task.prioridade; data.confidencial = task.confidencial; }
+    if (!_exec) { data.titulo = task.titulo; data.descricao = task.descricao; data.status = task.status; data.pasta = task.pasta; }
     const oldStatus = task.status, oldProg = task.progresso || 0;
     if (data.status !== oldStatus) {
       const motivo = pedirMotivoStatus(STATUS_LABEL[oldStatus], STATUS_LABEL[data.status]);
