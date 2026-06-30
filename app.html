@@ -819,8 +819,18 @@
   .cal-month .cm-empty { font-size: .72rem; color: var(--text-mute); padding: 10px 2px; }
 
   /* "Para quem" em destaque + ofuscar o restante até escolher */
-  #iParaRow select { border-color: var(--accent); }
+  #iParaRow #iParaBusca { border-color: var(--accent); }
   .para-hint { font-size: .72rem; color: var(--accent-bright); margin-top: 6px; }
+  /* combobox pesquisável do "Para quem" */
+  .combo { position: relative; }
+  .combo-list { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 60;
+    max-height: 260px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: var(--shadow-md); padding: 4px; }
+  .combo-group { font-size: .62rem; text-transform: uppercase; letter-spacing: .8px; color: var(--text-mute);
+    padding: 8px 10px 4px; font-weight: 700; }
+  .combo-item { padding: 8px 10px; border-radius: 7px; font-size: .85rem; cursor: pointer; }
+  .combo-item:hover { background: var(--accent-soft); color: var(--accent); }
+  .combo-empty { padding: 12px 10px; font-size: .8rem; color: var(--text-mute); }
   .form-dim { opacity: .4; filter: saturate(.5); pointer-events: none; transition: opacity .2s ease, filter .2s ease; }
   .auto-block { display: grid; grid-template-columns: repeat(3, 1fr); padding: 12px 14px;
     background: var(--accent-soft); border: 1px solid rgba(200,32,58,.25); border-radius: var(--radius); }
@@ -1065,7 +1075,11 @@
       <div class="modal-tab" id="mtab-criacao">
         <div class="full" id="iParaRow" style="margin-bottom:16px">
           <label>Para quem</label>
-          <select id="iPara" onchange="onParaChange()"></select>
+          <div class="combo" id="iParaCombo">
+            <input type="text" id="iParaBusca" autocomplete="off" placeholder="Buscar colaborador por nome..." oninput="filtrarPara()" onfocus="abrirPara()">
+            <div class="combo-list" id="iParaResults" style="display:none"></div>
+          </div>
+          <input type="hidden" id="iPara">
           <div class="para-hint" id="iParaHint">Escolha quem vai cuidar da demanda para liberar o restante.</div>
         </div>
         <div class="form-grid" id="taskFormRest">
@@ -1892,33 +1906,56 @@ function cargoDe(p) {
   const r = p && rosterByMat(p.matricula);
   return (r && r.cargo) || "";
 }
+function filialDe(p) {
+  if (p && p.filial) return p.filial;
+  const r = p && rosterByMat(p.matricula);
+  return (r && r.filial) || "";
+}
 function pessoaParaLabel(p) {
   const c = cargoDe(p);
-  return c ? `${p.nome} | ${c}` : p.nome;
+  const f = filialDe(p);
+  // supervisores/lojas (filial ≠ CORP) mostram a filial: "Nome | Cargo FILIAL"
+  const extra = (f && f !== 'CORP') ? (c ? `${c} ${f}` : f) : c;
+  return extra ? `${p.nome} | ${extra}` : p.nome;
 }
-function buildParaOptions(meId) {
+/* lista pesquisável do "Para quem": [{id, nome, label, setor(label do grupo), ord}] */
+let PARA_LISTA = [];
+function montarParaLista(meId) {
   const ehLider = p => p.perfil === 'gestor' || p.perfil === 'gestor_master';
-  let html = `<option value="">Selecione a pessoa...</option>`;
+  const ordena = arr => arr.sort((a, b) =>
+    ((ehLider(b) ? 1 : 0) - (ehLider(a) ? 1 : 0)) || (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+  PARA_LISTA = [];
   const me = meId && PROFILES_BY_ID[meId];
-  if (me) html += `<option value="${me.id}">${esc(me.nome)} (você)</option>`;
+  if (me) PARA_LISTA.push({ id: me.id, nome: me.nome, label: `${me.nome} (você)`, setor: '' });
   const todos = Object.values(PROFILES_BY_ID).filter(p => p.matricula !== '0' && String(p.id) !== String(meId));
   const conhecidos = new Set(SETOR_ORDEM_PARA.map(x => x[0]));
-  const ordenaGrupo = arr => arr.sort((a, b) =>
-    ((ehLider(b) ? 1 : 0) - (ehLider(a) ? 1 : 0)) || (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
   SETOR_ORDEM_PARA.forEach(([s, label]) => {
-    const grupo = ordenaGrupo(todos.filter(p => p.setor === s));
-    if (!grupo.length) return;
-    html += `<optgroup label="${esc(label)}">`
-      + grupo.map(p => `<option value="${p.id}">${esc(pessoaParaLabel(p))}</option>`).join("")
-      + `</optgroup>`;
+    ordena(todos.filter(p => p.setor === s)).forEach(p =>
+      PARA_LISTA.push({ id: p.id, nome: p.nome, label: pessoaParaLabel(p), setor: label }));
   });
-  const resto = ordenaGrupo(todos.filter(p => !conhecidos.has(p.setor)));
-  if (resto.length) {
-    html += `<optgroup label="Outros">`
-      + resto.map(p => `<option value="${p.id}">${esc(pessoaParaLabel(p))}</option>`).join("")
-      + `</optgroup>`;
-  }
-  return html;
+  ordena(todos.filter(p => !conhecidos.has(p.setor))).forEach(p =>
+    PARA_LISTA.push({ id: p.id, nome: p.nome, label: pessoaParaLabel(p), setor: 'Outros' }));
+}
+function renderPara(q) {
+  const box = document.getElementById("iParaResults");
+  if (!box) return;
+  const term = (q || '').trim().toLowerCase();
+  const list = PARA_LISTA.filter(x => !term || (x.nome || '').toLowerCase().includes(term) || (x.label || '').toLowerCase().includes(term));
+  if (!list.length) { box.innerHTML = `<div class="combo-empty">Nenhum colaborador encontrado.</div>`; return; }
+  let html = '', lastSetor = null;
+  list.forEach(x => {
+    if (x.setor !== lastSetor) { if (x.setor) html += `<div class="combo-group">${esc(x.setor)}</div>`; lastSetor = x.setor; }
+    html += `<div class="combo-item" data-id="${esc(String(x.id))}" data-nome="${esc(x.nome)}" onclick="selecionarPara(this)">${esc(x.label)}</div>`;
+  });
+  box.innerHTML = html;
+}
+function abrirPara() { const b = document.getElementById("iParaResults"); if (b) { b.style.display = "block"; renderPara(document.getElementById("iParaBusca").value); } }
+function filtrarPara() { abrirPara(); }
+function selecionarPara(el) {
+  document.getElementById("iPara").value = el.getAttribute("data-id");
+  document.getElementById("iParaBusca").value = el.getAttribute("data-nome");
+  document.getElementById("iParaResults").style.display = "none";
+  onParaChange();
 }
 function openModal(id) {
   editingId = id || null;
@@ -1954,7 +1991,11 @@ function openModal(id) {
   } else {
     applyReadOnly(false);
     paraRow.style.display = "block";
-    document.getElementById("iPara").innerHTML = buildParaOptions(currentUser && currentUser.id);
+    montarParaLista(currentUser && currentUser.id);
+    document.getElementById("iPara").value = "";
+    document.getElementById("iParaBusca").value = "";
+    document.getElementById("iParaResults").style.display = "none";
+    renderPara("");
     setupApprovalBox(null);
     onParaChange();
   }
@@ -1970,7 +2011,7 @@ function openModal(id) {
   renderPastaLink();
   setModalTab("criacao");   // sempre abre na aba Criação
   document.getElementById("overlay").classList.add("open");
-  (id ? document.getElementById("iTitulo") : document.getElementById("iPara")).focus();
+  (id ? document.getElementById("iTitulo") : document.getElementById("iParaBusca")).focus();
 }
 function confirmarConfidencial(cb) {
   if (!cb.checked) return;
@@ -2712,6 +2753,12 @@ function renderPainel() {
 }
 
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+// fecha a lista do "Para quem" ao clicar fora do combobox
+document.addEventListener("click", e => {
+  const combo = document.getElementById("iParaCombo");
+  const res = document.getElementById("iParaResults");
+  if (res && combo && !combo.contains(e.target)) res.style.display = "none";
+});
 
 applyTheme(localStorage.getItem("theme") || "light");
 
