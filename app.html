@@ -756,6 +756,13 @@
   .s-demanda { font-weight: 600; }
   .s-sub { font-size: .68rem; color: var(--text-mute); }
   .s-desc { font-size: .73rem; color: var(--text-dim); margin-top: 4px; line-height: 1.4; white-space: normal; max-width: 360px; }
+  /* histórico de status no modal */
+  .sh-item { padding: 10px 12px; border: 1px solid var(--border); border-left: 3px solid var(--st-pend); border-radius: 8px; margin-bottom: 8px; background: var(--surface-2); }
+  .sh-top { display: flex; align-items: center; gap: 8px; font-size: .8rem; }
+  .sh-arrow { color: var(--text-mute); }
+  .sh-meta { font-size: .7rem; color: var(--text-dim); margin-top: 5px; }
+  .sh-motivo { font-size: .78rem; color: var(--text); margin-top: 6px; line-height: 1.4; padding-top: 6px; border-top: 1px dashed var(--border); }
+  .sh-motivo.sh-vazio { color: var(--text-mute); font-style: italic; }
 
   /* barra de progresso no card */
   .t-prog { margin: 8px 0 2px; }
@@ -1051,6 +1058,7 @@
       <div class="modal-tabs">
         <button type="button" class="mtab active" data-mtab="criacao" onclick="setModalTab('criacao')">Criação</button>
         <button type="button" class="mtab" data-mtab="execucao" onclick="setModalTab('execucao')">Execução</button>
+        <button type="button" class="mtab" data-mtab="historico" id="mtabHistBtn" onclick="setModalTab('historico')">Histórico</button>
       </div>
 
       <!-- ABA: CRIAÇÃO -->
@@ -1131,6 +1139,11 @@
             <div id="iPastaLink" style="display:none;margin-top:6px;font-size:.78rem"></div>
           </div>
         </div>
+      </div>
+      <!-- ABA: HISTÓRICO (mudanças de status desta demanda) -->
+      <div class="modal-tab" id="mtab-historico" style="display:none">
+        <div style="font-size:.78rem;color:var(--text-dim);margin-bottom:12px">Todas as mudanças de status desta demanda, com a justificativa de cada uma.</div>
+        <div id="statusHistBox"></div>
       </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-danger" id="btnDelete" style="display:none" onclick="deleteTask()">Excluir</button>
@@ -1360,7 +1373,7 @@ async function loadFromSupabase() {
           ts: `${p(d.getDate())}/${p(d.getMonth()+1)}/${String(d.getFullYear()).slice(2)} ${p(d.getHours())}:${p(d.getMinutes())}`,
           iso: l.created_at || "",
           code: l.demanda_code || "", titulo: l.titulo, acao: l.acao, de: l.de || "—", para: l.para || "—",
-          userId: l.user_id || null, setor: l.setor || null, setorDono: l.setor_dono || null,
+          userId: l.user_id || null, setor: l.setor || null, setorDono: l.setor_dono || null, motivo: l.motivo || null,
         };
       });
     }
@@ -1417,6 +1430,7 @@ async function sbLog(entry) {
       demanda_code: entry.code || null, titulo: entry.titulo,
       acao: entry.acao, de: entry.de === "—" ? null : entry.de, para: entry.para === "—" ? null : entry.para,
       user_id: entry.userId || null, setor: entry.setor || null, setor_dono: entry.setorDono || null,
+      motivo: entry.motivo || null,
     }]);
   } catch (e) { /* log local já garante o registro */ }
 }
@@ -1424,7 +1438,7 @@ async function sbLog(entry) {
 /* ══════════ HISTÓRICO ══════════ */
 // `task` pode ser uma demanda real ou um objeto-evento {code,titulo,setor,userId}
 // (usado p/ registrar solicitações/aprovações). userId = DONO/alvo da demanda.
-function logAction(task, acao, de, para) {
+function logAction(task, acao, de, para, motivo) {
   const donoSetor = (task.userId && PROFILES_BY_ID[task.userId] && PROFILES_BY_ID[task.userId].setor) || null;
   const entry = {
     ts: nowStr(), iso: new Date().toISOString(), code: task.code || "", titulo: task.titulo, acao,
@@ -1432,6 +1446,7 @@ function logAction(task, acao, de, para) {
     userId: currentUser ? currentUser.id : null,          // ATOR (quem fez a ação)
     setor: task.setor || null,                            // setor da demanda/evento
     setorDono: donoSetor,                                 // setor do dono/alvo
+    motivo: motivo || null,                               // justificativa (mudança de status)
   };
   histLog.unshift(entry);
   if (histLog.length > 500) histLog.length = 500;
@@ -1847,7 +1862,7 @@ function attachDnD() {
         if (motivo === null) { render(); return; }   // cancelado → mantém como estava
         t.status = novoStatus;
         t.motivoStatus = motivo;
-        logAction(t, "Status atualizado", STATUS_LABEL[oldStatus], STATUS_LABEL[t.status]);
+        logAction(t, "Status atualizado", STATUS_LABEL[oldStatus], STATUS_LABEL[t.status], motivo);
         if (t.status === "concluido") {
           t.concluidaEm = today();
           t.progresso = 100;
@@ -2029,8 +2044,39 @@ function closeModal() {
 }
 function setModalTab(name) {
   document.querySelectorAll(".modal-tabs .mtab").forEach(b => b.classList.toggle("active", b.dataset.mtab === name));
-  document.getElementById("mtab-criacao").style.display = name === "criacao" ? "" : "none";
-  document.getElementById("mtab-execucao").style.display = name === "execucao" ? "" : "none";
+  ["criacao", "execucao", "historico"].forEach(n => {
+    const el = document.getElementById("mtab-" + n); if (el) el.style.display = (n === name) ? "" : "none";
+  });
+  if (name === "historico") renderHistStatus(editingId ? tasks.find(x => String(x.id) === String(editingId)) : null);
+}
+async function renderHistStatus(t) {
+  const box = document.getElementById("statusHistBox");
+  if (!box) return;
+  if (!t || !t.id) { box.innerHTML = `<div class="empty-illus">${ILLUS.history}<div>O histórico aparece após a demanda ser criada.</div></div>`; return; }
+  box.innerHTML = `<div class="empty-soft">Carregando histórico...</div>`;
+  let rows = [];
+  if (sb && t.code) {
+    try {
+      const { data } = await sb.from("demandas_log").select("*")
+        .eq("demanda_code", t.code).eq("acao", "Status atualizado")
+        .order("created_at", { ascending: false });
+      rows = data || [];
+    } catch (e) { /* cai no fallback */ }
+  }
+  if (!rows.length) {
+    rows = histLog.filter(h => h.code === t.code && h.acao === "Status atualizado")
+      .map(h => ({ created_at: h.iso, user_id: h.userId, de: h.de, para: h.para, motivo: h.motivo }));
+  }
+  if (!rows.length) { box.innerHTML = `<div class="empty-illus">${ILLUS.history}<div>Nenhuma mudança de status registrada ainda.</div></div>`; return; }
+  box.innerHTML = rows.map(r => {
+    const d = new Date(r.created_at); const p = n => String(n).padStart(2, "0");
+    const ts = isNaN(d.getTime()) ? "" : `${p(d.getDate())}/${p(d.getMonth() + 1)}/${String(d.getFullYear()).slice(2)} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    return `<div class="sh-item">
+      <div class="sh-top">${fmtHistVal(r.de || "—")} <span class="sh-arrow">→</span> ${fmtHistVal(r.para || "—")}</div>
+      <div class="sh-meta">${esc(nomeDe(r.user_id))}${ts ? " · " + ts : ""}</div>
+      ${r.motivo ? `<div class="sh-motivo">${esc(r.motivo)}</div>` : `<div class="sh-motivo sh-vazio">— sem justificativa registrada —</div>`}
+    </div>`;
+  }).join("");
 }
 function renderPastaLink() {
   const v = (document.getElementById("iPasta").value || "").trim();
@@ -2267,7 +2313,7 @@ async function saveTask(e) {
     }
     Object.assign(task, data);
     if (task.status !== oldStatus) {
-      logAction(task, "Status atualizado", STATUS_LABEL[oldStatus], STATUS_LABEL[task.status]);
+      logAction(task, "Status atualizado", STATUS_LABEL[oldStatus], STATUS_LABEL[task.status], task.motivoStatus);
       if (task.status === "concluido") { task.concluidaEm = today(); task.progresso = 100; }
     } else if ((task.progresso || 0) !== oldProg) {
       logAction(task, "Progresso atualizado", oldProg + "%", task.progresso + "%");
