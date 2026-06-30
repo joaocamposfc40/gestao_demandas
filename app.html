@@ -1076,7 +1076,7 @@
         <div class="full" id="iParaRow" style="margin-bottom:16px">
           <label>Para quem</label>
           <div class="combo" id="iParaCombo">
-            <input type="text" id="iParaBusca" autocomplete="off" placeholder="Buscar colaborador por nome..." oninput="filtrarPara()" onfocus="abrirPara()">
+            <input type="text" id="iParaBusca" autocomplete="off" placeholder="Buscar colaborador por nome..." oninput="filtrarPara()" onfocus="abrirPara()" onclick="event.stopPropagation(); abrirPara()">
             <div class="combo-list" id="iParaResults" style="display:none"></div>
           </div>
           <input type="hidden" id="iPara">
@@ -2510,24 +2510,37 @@ function scopeSeg(extraStyle) {
 }
 
 /* ══════════ FILTROS (compartilhados: Quadro · Calendário · Listagem) ══════════ */
-let FILT = { busca: '', setor: '', prioridade: '' };
+/* filiais de loja, na ordem definida pelo negócio */
+const FILIAIS_FILTRO = ['GUS', 'IMB', 'PAL', 'TAM', 'AJU', 'JPA', 'PNG', 'CAU', 'BAR', 'CABO'];
+/* filial do DONO da demanda (CORP por padrão se desconhecido) */
+function demandaFilial(t) { return filialDe(PROFILES_BY_ID[t && t.userId]) || 'CORP'; }
+let FILT = { busca: '', setor: '', prioridade: '', origem: '', filial: '' };
 function applyFilters(list) {
   const f = FILT, q = (f.busca || '').toLowerCase();
-  return list.filter(t =>
-    (!q || (t.titulo + ' ' + (t.descricao || '') + ' ' + (t.code || '')).toLowerCase().includes(q)) &&
-    (!f.setor || t.setor === f.setor) &&
-    (!f.prioridade || t.prioridade === f.prioridade)
-  );
+  return list.filter(t => {
+    const fil = demandaFilial(t);
+    const ehLoja = fil !== 'CORP';
+    return (!q || (t.titulo + ' ' + (t.descricao || '') + ' ' + (t.code || '')).toLowerCase().includes(q)) &&
+      (!f.setor || t.setor === f.setor) &&
+      (!f.prioridade || t.prioridade === f.prioridade) &&
+      (!f.origem || (f.origem === 'corp' ? !ehLoja : ehLoja)) &&
+      (!f.filial || fil === f.filial);
+  });
 }
 function filterBarHTML() {
   const f = FILT;
   const sel = (cur, val, label) => `<option value="${esc(val)}"${cur === val ? ' selected' : ''}>${label}</option>`;
   const setores = SETORES.map(s => sel(f.setor, s, esc(s))).join('');
   const scope = canToggleScope() ? scopeSeg('margin-left:auto') : '';
+  const filialSel = f.origem === 'loja'
+    ? `<select onchange="onFilter('filial', this.value)"><option value="">Todas as filiais</option>${FILIAIS_FILTRO.map(c => sel(f.filial, c, c)).join('')}</select>`
+    : '';
   return `
     <input type="search" name="busca-demanda" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="🔍 Buscar demanda..." value="${f.busca ? esc(f.busca) : ''}" oninput="onFilter('busca', this.value)">
     <select onchange="onFilter('setor', this.value)"><option value="">Todos os setores</option>${setores}</select>
     <select onchange="onFilter('prioridade', this.value)"><option value="">Prioridade: todas</option>${sel(f.prioridade, 'critica', '⚡ Só prioritárias')}</select>
+    <select onchange="onFilter('origem', this.value)"><option value="">Corp + Loja</option>${sel(f.origem, 'corp', 'Corporativo')}${sel(f.origem, 'loja', 'Loja')}</select>
+    ${filialSel}
     <button class="btn btn-ghost" onclick="limparFiltros()">Limpar</button>
     ${scope}`;
 }
@@ -2535,9 +2548,13 @@ function renderFilters() {
   const el = document.getElementById('filtersDemandas');
   if (el) el.innerHTML = filterBarHTML();
 }
-function onFilter(field, val) { FILT[field] = val; renderActiveDataView(); }
+function onFilter(field, val) {
+  FILT[field] = val;
+  if (field === 'origem') { if (val !== 'loja') FILT.filial = ''; renderFilters(); }  // mostra/oculta filtro de filial
+  renderActiveDataView();
+}
 function renderActiveDataView() { renderDataView(); }
-function limparFiltros() { FILT = { busca: '', setor: '', prioridade: '' }; renderFilters(); renderActiveDataView(); }
+function limparFiltros() { FILT = { busca: '', setor: '', prioridade: '', origem: '', filial: '' }; renderFilters(); renderActiveDataView(); }
 function calScroll(dir) { const k = document.getElementById('calKanban'); if (k) k.scrollBy({ left: dir * 264, behavior: 'smooth' }); }
 
 /* ══════════ PAINEL (storytelling, por perfil) ══════════ */
@@ -2881,7 +2898,7 @@ function updateRoleUI() {
 async function loadProfiles() {
   if (!sb) return;
   try {
-    const { data, error } = await sb.from("profiles").select("id,matricula,nome,perfil,gestor_matricula,email,setor,must_change_password");
+    const { data, error } = await sb.from("profiles").select("id,matricula,nome,perfil,gestor_matricula,email,setor,filial,cargo,must_change_password");
     if (error) throw error;
     PROFILES_BY_ID = {};
     (data || []).forEach(p => { PROFILES_BY_ID[p.id] = p; });
