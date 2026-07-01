@@ -142,6 +142,12 @@
   .filtros-panel select, .filtros-panel input { width: 100%; background: var(--surface-2); border: 1px solid var(--border);
     color: var(--text); padding: 8px 10px; border-radius: 8px; font-size: .85rem; outline: none; }
   .filtros-panel select:focus, .filtros-panel input:focus { border-color: var(--accent); }
+  .filtros-panel .fmini { margin-bottom: 4px; }
+  .filtro-checklist { max-height: 130px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 4px; background: var(--surface-2); }
+  .filtro-checklist .fck { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 6px; font-size: .82rem; cursor: pointer; }
+  .filtro-checklist .fck:hover { background: var(--accent-soft); }
+  .filtro-checklist .fck input { width: auto; padding: 0; margin: 0; flex-shrink: 0; }
+  .filtro-checklist .fck-empty { font-size: .78rem; color: var(--text-mute); padding: 6px; }
   .sync-chip {
     display: inline-flex; align-items: center; gap: 8px;
     background: var(--surface-2); border: 1px solid var(--border);
@@ -1432,7 +1438,7 @@ async function sbUpsertTask(t) {
     if (isLocalId(t.id)) {
       const { data, error } = await sb.from("demandas").insert([taskToRow(t)]).select();
       if (error) throw error;
-      if (data && data[0]) { t.id = data[0].id; persist(); }
+      if (data && data[0]) { t.id = data[0].id; if (data[0].code) t.code = data[0].code; persist(); }  // adota o código atribuído pelo servidor
     } else {
       const { error } = await sb.from("demandas").update(taskToRow(t)).eq("id", t.id);
       if (error) throw error;
@@ -1921,10 +1927,10 @@ const SETOR_ORDEM_PARA = [
   ["Diretoria", "Diretoria"],
   ["CI, Riscos e Compliance", "Controles Internos, Riscos & Compliance"],
   ["ESG", "ESG"],
-  ["Auditoria Interna", "Auditoria Interna"],
+  ["Auditoria Corp", "Auditoria Corp"],
   ["Dados", "Dados"],
   ["Segurança da Informação", "Segurança da Informação"],
-  ["Auditoria/Loja", "Auditoria | Loja"],
+  ["Auditoria Loja", "Auditoria Loja"],
 ];
 function cargoDe(p) {
   if (p && p.cargo) return p.cargo;
@@ -2425,10 +2431,11 @@ async function saveTask(e) {
     task = { id: uid(), code: nextCode(), criadaEm: today(), aprovacao: 'none', ...data };
     if (data.status === "concluido") { task.concluidaEm = today(); task.progresso = 100; }
     tasks.push(task);
-    logAction(task, "Nova demanda criada", "—", STATUS_LABEL[task.status]);
   }
   persist();
-  await sbUpsertTask(task);   // garante o id real antes de solicitar aprovação
+  await sbUpsertTask(task);   // garante o id real + adota o código do servidor antes de logar/solicitar
+  // loga a criação DEPOIS do insert, já com o código real atribuído pelo servidor
+  if (!editingId) logAction(task, "Nova demanda criada", "—", STATUS_LABEL[task.status]);
 
   // cria as subtarefas adicionadas na criação (demanda própria nova)
   if (!editingId && novaSubt.length && sb && !isLocalId(task.id)) {
@@ -2539,7 +2546,7 @@ function scopeSeg(extraStyle) {
 const FILIAIS_FILTRO = ['GUS', 'IMB', 'PAL', 'TAM', 'AJU', 'JPA', 'PNG', 'CAU', 'BAR', 'CABO'];
 /* filial do DONO da demanda (CORP por padrão se desconhecido) */
 function demandaFilial(t) { return filialDe(PROFILES_BY_ID[t && t.userId]) || 'CORP'; }
-let FILT = { busca: '', setor: '', origem: '', solicitante: '', executante: '', prazo: '' };
+let FILT = { busca: '', setor: '', origem: '', solicitante: [], executante: [], prazo: '' };
 function applyFilters(list) {
   const f = FILT, q = (f.busca || '').toLowerCase();
   return list.filter(t => {
@@ -2547,14 +2554,19 @@ function applyFilters(list) {
     return (!q || (t.titulo + ' ' + (t.descricao || '') + ' ' + (t.code || '')).toLowerCase().includes(q)) &&
       (!f.setor || t.setor === f.setor) &&
       (!f.origem || (f.origem === 'corp' ? !ehLoja : ehLoja)) &&
-      (!f.solicitante || t.solicitante === f.solicitante) &&
-      (!f.executante || String(t.userId) === String(f.executante)) &&
+      (!f.solicitante.length || f.solicitante.includes(t.solicitante)) &&
+      (!f.executante.length || f.executante.includes(String(t.userId))) &&
       (!f.prazo || (t.prazo && t.prazo.slice(0, 7) === f.prazo));
   });
 }
 const MESES_ABBR = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 function mesLabel(ym) { const a = ym.split('-'); return `${MESES_ABBR[parseInt(a[1], 10) - 1]}/${a[0]}`; }
-function filtrosAtivos() { return ['busca', 'setor', 'origem', 'solicitante', 'executante', 'prazo'].filter(k => FILT[k]).length; }
+function filtrosAtivos() {
+  let n = ['busca', 'setor', 'origem', 'prazo'].filter(k => FILT[k]).length;
+  if (FILT.solicitante.length) n++;
+  if (FILT.executante.length) n++;
+  return n;
+}
 function atualizarBadgeFiltros() {
   const b = document.getElementById('filtrosBadge'); if (!b) return;
   const n = filtrosAtivos(); b.textContent = n; b.style.display = n ? 'inline-flex' : 'none';
@@ -2577,11 +2589,29 @@ function renderFiltrosPanel() {
     <label>Setor</label>
     <select onchange="onFilter('setor', this.value)"><option value="">Todos os setores</option>${setores}</select>
     <label>Solicitante</label>
-    <select onchange="onFilter('solicitante', this.value)"><option value="">Todos</option>${solics.map(s => sel(f.solicitante, s, s)).join('')}</select>
+    <input type="text" class="fmini" autocomplete="off" placeholder="Buscar solicitante..." oninput="filtrarChecklist('ckSolic', this.value)">
+    <div class="filtro-checklist" id="ckSolic">${solics.length ? solics.map(s => ckItem('solicitante', s, s)).join('') : '<div class="fck-empty">—</div>'}</div>
     <label>Executante</label>
-    <select onchange="onFilter('executante', this.value)"><option value="">Todos</option>${execs.map(o => sel(f.executante, o.id, o.nome)).join('')}</select>
+    <input type="text" class="fmini" autocomplete="off" placeholder="Buscar executante..." oninput="filtrarChecklist('ckExec', this.value)">
+    <div class="filtro-checklist" id="ckExec">${execs.length ? execs.map(o => ckItem('executante', o.id, o.nome)).join('') : '<div class="fck-empty">—</div>'}</div>
     <label>Prazo</label>
     <select onchange="onFilter('prazo', this.value)"><option value="">Qualquer</option>${meses.map(m => sel(f.prazo, m, mesLabel(m))).join('')}</select>`;
+}
+function ckItem(field, val, label) {
+  const checked = FILT[field].map(String).includes(String(val)) ? ' checked' : '';
+  return `<label class="fck"><input type="checkbox" value="${esc(String(val))}"${checked} onchange="toggleMulti('${field}', this.value, this.checked)"><span>${esc(label)}</span></label>`;
+}
+function toggleMulti(field, val, checked) {
+  const arr = FILT[field];
+  const i = arr.indexOf(val);
+  if (checked && i < 0) arr.push(val);
+  else if (!checked && i >= 0) arr.splice(i, 1);
+  atualizarBadgeFiltros(); renderPainel(); renderActiveDataView();
+}
+function filtrarChecklist(boxId, term) {
+  const box = document.getElementById(boxId); if (!box) return;
+  const t = (term || '').toLowerCase();
+  box.querySelectorAll('.fck').forEach(l => { l.style.display = (!t || l.textContent.toLowerCase().includes(t)) ? '' : 'none'; });
 }
 function toggleFiltros(e) {
   if (e) e.stopPropagation();
@@ -2596,7 +2626,7 @@ function onFilter(field, val) {
 }
 function renderActiveDataView() { renderDataView(); }
 function limparFiltros() {
-  FILT = { busca: '', setor: '', origem: '', solicitante: '', executante: '', prazo: '' };
+  FILT = { busca: '', setor: '', origem: '', solicitante: [], executante: [], prazo: '' };
   renderFiltrosPanel(); atualizarBadgeFiltros(); renderPainel(); renderActiveDataView();
 }
 function calScroll(dir) { const k = document.getElementById('calKanban'); if (k) k.scrollBy({ left: dir * 264, behavior: 'smooth' }); }
