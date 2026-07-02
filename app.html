@@ -2605,10 +2605,13 @@ function scopeApply(list) {
   if (taskScope === 'minhas') {
     return list.filter(t => String(t.userId) === me);
   }
-  // 'equipe' (setor): master/dev veem tudo; demais veem o próprio setor (modelo "ambos")
+  // 'equipe' (setor): master/dev veem tudo; demais veem o próprio setor +
+  // (gestor) os liderados diretos de QUALQUER setor/filial — espelha o RLS (is_meu_liderado),
+  // p/ o gestor enxergar seu time de loja (setor diferente do dele).
   if (vemTudo(currentUser.perfil)) return list;
   const s = currentUser.setor;
-  return list.filter(t => s && (t.setor === s || setorDoDono(t) === s));
+  const lid = lideradosIds();
+  return list.filter(t => (s && (t.setor === s || setorDoDono(t) === s)) || lid.has(String(t.userId)));
 }
 function setScope(s) { taskScope = s; render(); }
 /* todos (inclusive individual) têm ao menos Minhas + Solicitadas */
